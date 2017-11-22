@@ -1,6 +1,4 @@
 # -------------------------- PS2 HL tools --------------------------
-Tools for Playstation 2 Half-Life port
-# ------------------------------------------------------------------
 
 Those tools are intended to convert/modify some resources of PS2 Half-life port.
 
