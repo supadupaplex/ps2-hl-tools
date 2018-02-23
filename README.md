@@ -10,7 +10,7 @@ List of tools:
 5) PS2 HL image tool (psitool) - "*.PSI" images
 6) PS2 HL TXT tool (txttool) - compressed "*.TXT" menu descriptors
 7) PS2 HL music tool (mustool) - "*.VAG" music, unplayable "*.WAV" files
-8) PS2 HL NOD tool (nodtool) - *.NOD ai node graph files
+8) PS2 HL NOD tool (nodtool) - *.NOD AI node graph files
 
 You can also find here some documentation about mentioned file formats.
 
