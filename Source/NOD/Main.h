@@ -280,54 +280,5 @@ struct sPS2NOD
 		Pointer += sizeof(char) * CGraph.RouteCount;
 		FileWriteBlock(ptrFile, Hashes, Pointer, sizeof(short) * CGraph.HashCount);
 
-		/*
-		// PS2 pointers (took those from PS2's c0a0.nod)
-		#define	PS2_PNODES		0x04CD4260
-		#define PS2_PLINKPOOL	0x04CFDAFC
-		#define PS2_PROUTEINFO	0x04DE1960
-		#define PS2_PNODES		0x04DE04B0
-		#define PS2_M_DI		0x04DE0640
-
-		// Update pointers to PS2 values -> no need as seems that game checks only if they are not NULL
-		CGraph.pNodes = PS2_PNODES;
-		CGraph.pLinkPool = PS2_PLINKPOOL;
-		CGraph.pRouteInfo = PS2_PROUTEINFO;
-		CGraph.pHashLinks = PS2_M_DI;
-		*/
 	}
 };
-
-
-/*
-// PS2 compressed *.txt header
-#pragma pack(1)				// Fix unwanted 0x00 bytes in structure
-struct sPS2CmpTxtHeader
-{
-	char Signature[10];		// "COMPRESSED" - signature
-
-	void UpdateFromFile(FILE **ptrFile)
-	{
-		FileReadBlock(ptrFile, this, 0, sizeof(sPS2CmpTxtHeader));
-	}
-	
-	void Update()
-	{
-		strncpy(this->Signature, "COMPRESSED", 10);
-	}
-
-	char Check()
-	{
-		char Temp[11];
-
-		memset(Temp, 0x00, sizeof(Temp));
-		memcpy(Temp, this->Signature, sizeof(Signature));
-
-		if (!strcmp(Temp, "COMPRESSED") == true)
-			return true;
-		else
-			return false;
-	}
-
-
-};
-*/
