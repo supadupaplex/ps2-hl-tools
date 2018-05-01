@@ -11,6 +11,7 @@ List of tools:
 6) PS2 HL TXT tool (txttool) - compressed "*.TXT" menu descriptors
 7) PS2 HL music tool (mustool) - "*.VAG" music, unplayable "*.WAV" files
 8) PS2 HL NOD tool (nodtool) - "*.NOD" AI node graph files
+9) PS2 HL EPC tool (epctool) - "*.EPC" precache files
 
 You can also find here some documentation about mentioned file formats.
 
