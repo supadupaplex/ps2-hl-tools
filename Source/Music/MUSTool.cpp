@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -195,12 +195,12 @@ uchar CheckVAG(const char * FileName, bool PrintInfo)	// Check VAG audio file ty
 		}
 		else if (VAGType == VAG_PS2)
 		{
-			puts("Type: PS2 VAG music file.");
+			puts("Type: PS2 Half-Life VAG music file.");
 			puts("PS2 HL supports only 1 channel 44100 Hz audio.");
 		}
 		else
 		{
-			puts("Type: incorrect VAG music file");
+			puts("Type: incorrect VAG music file.");
 		}
 	}
 
@@ -215,7 +215,7 @@ void UnpatchWAV(const char * FileName)		// Remove header from WAV file
 	FILE * ptrInFile;		// Input file stream
 	FILE * ptrOutFile;		// Output file stream
 
-	sWAVHeader WAVHeader;	// VAW file header
+	uWAVHeader WAVHeader;	// WAV file header
 	uchar * AudioData;		// Audio data pointer
 	ulong AudioDataSize;	// Size of audio data
 
@@ -223,45 +223,59 @@ void UnpatchWAV(const char * FileName)		// Remove header from WAV file
 	SafeFileOpen(&ptrInFile, FileName, "rb");
 
 	// Get header from file
-	WAVHeader.UpdateFromFile(&ptrInFile);
+	WAVHeader.UpdateFromNormal(&ptrInFile);
 
 	// Check type
-	if (WAVHeader.CheckType(FileSize(&ptrInFile)) == VAG_NORMAL)
+	if (WAVHeader.CheckType(FileSize(&ptrInFile)) == WAV_NORMAL)
 	{
-		printf("Channels: %i, Sampling frequency: %i, BitsPerSample: %i \n", WAVHeader.Channels, WAVHeader.SamplingF, WAVHeader.BitsPerSample);
+		printf("Normal WAV: Channels: %i, Sampling frequency: %i, BitsPerSample: %i \n",
+			WAVHeader.Normal.WaveChunk.Channels,
+			WAVHeader.Normal.WaveChunk.SamplingF,
+			WAVHeader.Normal.WaveChunk.BitsPerSample);
 	}
-	else if (WAVHeader.CheckType(FileSize(&ptrInFile)) == VAG_UNSUPPORTED)
+	else if (WAVHeader.CheckType(FileSize(&ptrInFile)) == WAV_UNSUPPORTED)
 	{
-		printf("Channels: %i, Sampling frequency: %i, BitsPerSample: %i \n", WAVHeader.Channels, WAVHeader.SamplingF, WAVHeader.BitsPerSample);
-		printf("Warning: PS2 HL supports only 16-bit 1 channel 11025 Hz audio. \nYou may encounter problems with this file. \n");
+		printf("Channels: %i, Sampling frequency: %i, BitsPerSample: %i \n",
+			WAVHeader.Normal.WaveChunk.Channels,
+			WAVHeader.Normal.WaveChunk.SamplingF,
+			WAVHeader.Normal.WaveChunk.BitsPerSample);
+		printf("Warning: PS2 HL supports only 8-bit 1 channel 11025/22050/44100 Hz audio. \nYou may encounter problems with this file. \n");
 		puts("Press any key to confirm ...");
 		_getch();
 	}
-	else if (WAVHeader.CheckType(FileSize(&ptrInFile)) == VAG_PS2)
-	{
-		puts("File already unpatched ...");
-		return;
-	}
 	else
 	{
-		puts("Incorrect WAV audio file ...");
+		puts("Bad WAV file ...");
 		return;
 	}
+
+	if (WAVHeader.Normal.Looped == true)
+		printf("Looped sound detected, start sample: %d \n", WAVHeader.Normal.LoopStart);
+
 	puts("Unpatching WAV music file ...");
 
 	// Read audio data
-	AudioDataSize = (ulong) ceil((double) (WAVHeader.DataSize + 4) / 16.0) * 16;	// Audio data should be alligned within 16-byte blocks
+	AudioDataSize = WAVHeader.Normal.DataChunk.DataSize + 16 -
+		(WAVHeader.Normal.DataChunk.DataSize + sizeof(sPS2WAVHeader)) % 16;	// Audio data should be aligned within 16-byte blocks
 	AudioData = (uchar *)malloc(AudioDataSize);
 	memset(AudioData, 0x00, AudioDataSize);
-	FileReadBlock(&ptrInFile, AudioData, sizeof(sWAVHeader) - 4, AudioDataSize);
+	FileReadBlock(&ptrInFile, AudioData, WAVHeader.Normal.DataOffset, WAVHeader.Normal.DataChunk.DataSize);
 
 	// Close input file
 	fclose(ptrInFile);
 
 	// Open output file (same as input)
 	SafeFileOpen(&ptrOutFile, FileName, "wb");
+	
+	// Convert header
+	WAVHeader.ConvertToPS2();
 
-	// Write audio data only
+	// Convert audio data
+	for (ulong Byte = 0; Byte < AudioDataSize; Byte++)
+		AudioData[Byte] += 0x80;
+
+	// Write data
+	FileWriteBlock(&ptrOutFile, &WAVHeader, sizeof(sPS2WAVHeader));
 	FileWriteBlock(&ptrOutFile, AudioData, AudioDataSize);
 
 	// Free memory
@@ -278,7 +292,7 @@ void PatchWAV(const char * FileName)	// Add header to WAV file
 	FILE * ptrInFile;		// Input file stream
 	FILE * ptrOutFile;		// Output file stream
 
-	sWAVHeader WAVHeader;	// WAV file header
+	uWAVHeader WAVHeader;	// WAV file header
 	uchar * AudioData;		// Audio data pointer
 	ulong AudioDataSize;	// Size of audio data
 
@@ -286,28 +300,26 @@ void PatchWAV(const char * FileName)	// Add header to WAV file
 	SafeFileOpen(&ptrInFile, FileName, "rb");
 
 	// Get header from file
-	WAVHeader.UpdateFromFile(&ptrInFile);
+	WAVHeader.UpdateFromPS2(&ptrInFile);
 
 	// Check type
 	if (WAVHeader.CheckType(FileSize(&ptrInFile)) == WAV_PS2)
 	{
-		puts("Patching PS2 WAV audio file ...");
-	}
-	else if (WAVHeader.CheckType(FileSize(&ptrInFile)) == WAV_NORMAL || WAVHeader.CheckType(FileSize(&ptrInFile)) == WAV_UNSUPPORTED)
-	{
-		puts("This file is already patched ...");
-		return;
+		printf("PS2 WAV: Sampling frequency: %i \n", WAVHeader.PS2.SamplingF);
+		if (WAVHeader.PS2.LoopStart != PS2_WAV_NOLOOP)
+			printf("Looped sound detected, start sample: %d \n", WAVHeader.PS2.LoopStart);
 	}
 	else
 	{
-		puts("Incorrect WAV audio file ...");
+		puts("Bad PS2 WAV file ...");
 		return;
 	}
+	puts("Patching PS2 WAV audio file ...");
 
 	// Read audio data
-	FileReadBlock(&ptrInFile, &AudioDataSize, 0, sizeof(AudioDataSize));
+	AudioDataSize = WAVHeader.PS2.DataSize;
 	AudioData = (uchar *)malloc(AudioDataSize);
-	FileReadBlock(&ptrInFile, AudioData, sizeof(AudioDataSize), AudioDataSize);
+	FileReadBlock(&ptrInFile, AudioData, sizeof(sPS2WAVHeader), AudioDataSize);
 
 	// Close input file
 	fclose(ptrInFile);
@@ -315,16 +327,39 @@ void PatchWAV(const char * FileName)	// Add header to WAV file
 	// Open output file (same as input)
 	SafeFileOpen(&ptrOutFile, FileName, "wb");
 
-	// Update header
-	//WAVHeader.Update(1, 44100, 4, AudioDataSize);		// Ugliest
-	//WAVHeader.Update(1, 22050, 8, AudioDataSize);		// Super ugly
-	//WAVHeader.Update(2, 11025, 8, AudioDataSize);		// Ugly
-	//WAVHeader.Update(2, 5512, 16, AudioDataSize);		// Less ugly
-	WAVHeader.Update(1, 11025, 16, AudioDataSize);		// OK but not as good as in game
+	// Convert header
+	WAVHeader.ConvertToNormal();
+
+	// Convert audio data
+	for (ulong Byte = 0; Byte < AudioDataSize; Byte++)
+		AudioData[Byte] += 0x80;
+
+	// Check if looped
+	bool Spacer;
+	sLOOP * LoopChunk = NULL;
+	if (WAVHeader.Normal.Looped == true)
+	{
+		LoopChunk = (sLOOP *) malloc(sizeof(sLOOP));
+		if (LoopChunk == NULL)
+		{
+			puts("Can't allocate memory ...");
+			exit(EXIT_FAILURE);
+		}
+		LoopChunk->Init(WAVHeader.Normal.DataChunk.DataSize, WAVHeader.Normal.LoopStart);
+		WAVHeader.Normal.RiffChunk.RiffSize += sizeof(sLOOP);
+		Spacer = WAVHeader.Normal.DataChunk.DataSize % 2;
+	}
 
 	// Write header and audio data
-	FileWriteBlock(&ptrOutFile, &WAVHeader, sizeof(sWAVHeader));
+	FileWriteBlock(&ptrOutFile, &WAVHeader, WAVHeader.Normal.DataOffset);	// DataOffset = size of WAV header
 	FileWriteBlock(&ptrOutFile, AudioData, AudioDataSize);
+	if (LoopChunk != NULL)
+	{
+		if (Spacer)
+			fputc(0x00, ptrOutFile);
+		FileWriteBlock(&ptrOutFile, LoopChunk, sizeof(sLOOP));
+		free(LoopChunk);
+	}
 
 	// Free memory
 	free(AudioData);
@@ -338,39 +373,54 @@ void PatchWAV(const char * FileName)	// Add header to WAV file
 uchar CheckWAV(const char * FileName, bool PrintInfo)	// Check WAV audio file type
 {
 	FILE * ptrInputFile;
-	sWAVHeader WAVHeader;
-	uchar WAVType;
+	uWAVHeader NormWAVHeader, PS2WAVHeader;
+	uchar NormWAVType, PS2WAVType;
 
 	// Open file
 	SafeFileOpen(&ptrInputFile, FileName, "rb");
 
 	// Check type
-	WAVHeader.UpdateFromFile(&ptrInputFile);
-	WAVType = WAVHeader.CheckType(FileSize(&ptrInputFile));
-
-	// Output info
-	if (PrintInfo == true)
-	{
-		if (WAVType == VAG_NORMAL || WAVType == VAG_UNSUPPORTED)
-		{
-			puts("Type: normal WAV audio file.");
-			printf("Channels: %i, Sampling frequency: %i, BitsPerSample: %i \n", WAVHeader.Channels, WAVHeader.SamplingF, WAVHeader.BitsPerSample);
-		}
-		else if (WAVType == VAG_PS2)
-		{
-			puts("Type: PS2 headerless WAV audio file.");
-			puts("Those files are usually 16-bit 1 channel 11025 Hz.");
-		}
-		else
-		{
-			puts("Type: incorrect WAV audio file");
-		}
-	}
+	NormWAVHeader.UpdateFromNormal(&ptrInputFile);
+	PS2WAVHeader.UpdateFromPS2(&ptrInputFile);
+	NormWAVType = NormWAVHeader.CheckType(FileSize(&ptrInputFile));
+	PS2WAVType = PS2WAVHeader.CheckType(FileSize(&ptrInputFile));
 
 	// Close file
 	fclose(ptrInputFile);
 
-	return WAVType;
+	// Output info
+	if (NormWAVType == WAV_NORMAL || NormWAVType == WAV_UNSUPPORTED)
+	{
+		if (PrintInfo == true)
+		{
+			puts("Type: normal WAV audio file.");
+			printf("Channels: %i, Sampling frequency: %i, BitsPerSample: %i \n",
+				NormWAVHeader.Normal.WaveChunk.Channels,
+				NormWAVHeader.Normal.WaveChunk.SamplingF,
+				NormWAVHeader.Normal.WaveChunk.BitsPerSample);
+		}
+
+		return NormWAVType;
+	}
+	else if (PS2WAVType == WAV_PS2)
+	{
+		if (PrintInfo == true)
+		{
+			puts("Type: PS2 Half-Life WAV audio file with compressed header.");
+			printf("Sampling frequency: %i \n", PS2WAVHeader.PS2.SamplingF);
+		}
+
+		return WAV_PS2;
+	}
+	else
+	{
+		if (PrintInfo == true)
+			puts("Type: bad WAV file");
+
+		return WAV_UNSUPPORTED;
+	}
+
+	return 0;
 }
 
 int main(int argc, char * argv[])
@@ -387,11 +437,11 @@ int main(int argc, char * argv[])
 	if (argc == 1)
 	{
 		// No arguments - show help screen
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017, Alexey Leushin. All rights reserved.\n");
+		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop *.VAG\\*.WAV audio file on mustool.exe");
-		puts("\n2) Command line\\Batch: \n\tI) Make *.VAG\\*.WAV audio file readable for Awave\\VGSC: \n\t\tmustool patch[filename]");
-		puts("\n\tII) Make *.VAG\\*.WAV audio file readable for PS2 HL: \n\t\tmustool unpatch[filename]");
-		puts("\n\tIII) Check *.VAG\\*.WAV audio file : \n\t\tmustool test[filename]");
+		puts("\n2) Command line\\Batch: \n\tI) Make *.VAG\\*.WAV audio file readable for Awave\\VGSC: \n\t\tmustool patch [filename]");
+		puts("\n\tII) Make *.VAG\\*.WAV audio file readable for PS2 HL: \n\t\tmustool unpatch [filename]");
+		puts("\n\tIII) Check *.VAG\\*.WAV audio file : \n\t\tmustool test [filename]");
 		puts("\nFor more info read ReadMe file.\n");
 		puts("Press any key to exit ...");
 
@@ -422,11 +472,13 @@ int main(int argc, char * argv[])
 		}
 		if (!strcmp(".wav", cFileExtension))
 		{
-			if (CheckWAV(argv[1], false) == WAV_PS2)
+			uchar WAVType = CheckWAV(argv[1], false);
+
+			if (WAVType == WAV_PS2)
 			{
 				PatchWAV(argv[1]);
 			}
-			else if (CheckWAV(argv[1], false) == WAV_NORMAL || CheckWAV(argv[1], false) == WAV_UNSUPPORTED)
+			else if (WAVType == WAV_NORMAL || WAVType == WAV_UNSUPPORTED)
 			{
 				UnpatchWAV(argv[1]);
 			}
@@ -456,7 +508,15 @@ int main(int argc, char * argv[])
 			}
 			else if (!strcmp(".wav", cFileExtension))
 			{
-				PatchWAV(argv[2]);
+				uchar WAVType = CheckWAV(argv[2], false);
+
+				// PS2 to Normal
+				if (WAVType == WAV_PS2)
+					PatchWAV(argv[2]);
+				else if (WAVType == WAV_NORMAL || WAV_UNSUPPORTED)
+					puts("File is already in normal format ...");
+				else
+					puts("Bad file ...");
 			}
 			else
 			{
@@ -471,7 +531,15 @@ int main(int argc, char * argv[])
 			}
 			else if (!strcmp(".wav", cFileExtension))
 			{
-				UnpatchWAV(argv[2]);
+				uchar WAVType = CheckWAV(argv[2], false);
+
+				// Normal to PS2
+				if (WAVType == WAV_NORMAL || WAVType == WAV_UNSUPPORTED)
+					UnpatchWAV(argv[2]);	
+				else if (WAVType == WAV_PS2)
+					puts("File is already in PS2 format ...");
+				else
+					puts("Bad file ...");
 			}
 			else
 			{
