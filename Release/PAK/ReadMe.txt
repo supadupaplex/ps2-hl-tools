@@ -1,8 +1,12 @@
 PS2 HL PAK tool
-Developed by Alexey Leushin, Novosibirsk, 2017.
+Developed by Alexey Leushin, Novosibirsk, 2017-2018.
 Zlib library is used within this program to perform DEFLATE\INFLATE operations.
 
 This tool is intended to extract or create new PS2 Half-life PAK files.
+
+Changelog:
+- v1.22: I found out that address of GLOBAL.PAK deviates, so I added possibility to enter it manually
+- v1.3:  I fixed address calculation for GLOBAL.PAK so there is no more need to manually enter it
 
 How to use:
 1) Windows explorer - drag and drop file or directory on paktool.exe
@@ -16,7 +20,7 @@ How to use:
 	- pack			- pack files from specified directory to normal PAK
 	- cpack			- pack files from specified directory to compressed PAK
 	- gpack			- pack files from specified directory to GLOBAL.PAK and GRESTORE.PAK
-	- decompress		- decompress PAK
+	- decompress	- decompress PAK
 	- compress		- compress PAK
 
 Prefixes of generated files and folders:
@@ -25,10 +29,6 @@ Prefixes of generated files and folders:
 3) "gre-" - patched (GRESTORE) file
 4) "ext-" - folder with extracted files
 
-Update (1.22): I found out that base RAM address of GLOBAL.PAK can sometimes deviate from its default value so I added
-possibility to change it. Try to change base address with 0x10 step from default value if you exerience problems when
-returning from mid-game menu back to game.
-
 Additional feature: you can decompress Zlib files (if you open them in hex editor you can find bytes 0x78, 0xDA).
 Create new file with four 0x01 bytes, then paste compressed data (starting from 0x78DA) and then use "decompress" command.
 
@@ -36,7 +36,7 @@ And finally, some formal stuff:
 =====================================================================
 LICENSE
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
