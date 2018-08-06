@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -54,13 +54,14 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.22"
+#define PROG_VERSION "1.3"
 #define PAK_NORMAL 0
 #define PAK_COMPRESSED 1
 #define PAK_UNKNOWN -1
 #define PS2HL_NPAK_SEG_SIZE 0x800		// PS2 HL normal PAK segment size (PS2 HL likes everything to be alligned)
 #define PS2HL_CPAK_SEG_SIZE 0x10		// PS2 HL compressed PAK segment size (PS2 HL likes everything to be alligned)
-#define GLOBAL_PAK_RAM_OFFSET "1F7DFD0"	// Location of last byte of GLOBAL.PAK inside PS2's RAM
+#define GLOBAL_PAK_RAM_OFFSET 0x1F7DFC0	// Base address of GLOBAL.PAK inside PS2's RAM
+#define GLOBAL_PAK_RAM_ALIGN 0x40		// Alignment of GLOBAL.PAK in PS2's RAM
 #define SPZ_BASE_FRAMEID 5				// Initial ID of SPZ frames in GLOBAL.PAK
 
 ////////// Typedefs //////////

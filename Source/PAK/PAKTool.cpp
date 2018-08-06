@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -629,18 +629,6 @@ void ConvertToGRE(const char * cFile)
 		return;
 	}
 
-	// Request base RAM address of GLOBAL.PAK
-	char cBuf[10];
-	char cBase[12];
-	ulong Base;
-	printf("Base RAM address of GLOBAL.PAK is required. \nLeave empty to use default value: 0x%s \nTry different values with 0x10 step if you encounter problems \nafter return from mid-game menu. \nAddress: 0x", GLOBAL_PAK_RAM_OFFSET);
-	gets_s(cBuf, sizeof(cBuf));
-	if (!strcmp(cBuf, ""))
-		strcpy(cBuf, GLOBAL_PAK_RAM_OFFSET);
-	strcpy(cBase, "0x");
-	strcat(cBase, cBuf);
-	sscanf(cBase, "%x", &Base);
-
 	// Load PAK file data
 	PAKDataSize = FileSize(&ptrInPAK) - PS2PAKHeader.Normal.TableSize;
 	PAKData = (char *)malloc(PAKDataSize);
@@ -667,7 +655,7 @@ void ConvertToGRE(const char * cFile)
 	// Patch sprite frames
 	char cExtension[5];
 	ulong FrameID = SPZ_BASE_FRAMEID;
-	ulong RAMOffset = Base - FileSize(&ptrInPAK);
+	ulong RAMOffset = GLOBAL_PAK_RAM_OFFSET - FileSize(&ptrInPAK) + (FileSize(&ptrInPAK) % GLOBAL_PAK_RAM_ALIGN);
 	ModelFlag = false;
 	for (ulong File = 0; File < PAKFileCount; File++)
 	{
@@ -736,7 +724,7 @@ void main(int argc, char * argv[])
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017, Alexey Leushin. All rights reserved.");
+		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.");
 		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop file or directory on paktool.exe \n2) Command line\\Batch - paktool [file\\dir_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
