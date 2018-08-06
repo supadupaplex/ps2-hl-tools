@@ -1,8 +1,11 @@
 PS2 HL TXT tool
-Developed by Alexey Leushin, Novosibirsk, 2017.
+Developed by Alexey Leushin, Novosibirsk, 2017-2018.
 Zlib library is used within this program to perform DEFLATE\INFLATE operations.
 
 This tool is intended to decompress\compress PS2 Half-life *.txt GUI descriptors.
+
+Changelog:
+- v1.01: small bug fixes
 
 How to use:
 1) Windows explorer - drag and drop *.txt file on txttool.exe
@@ -12,7 +15,7 @@ And finally, some formal stuff:
 =====================================================================
 LICENSE
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or

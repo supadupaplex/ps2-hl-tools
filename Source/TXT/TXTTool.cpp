@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -40,7 +40,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "Main.h"				// Main header
 
 ////////// Functions //////////
-int CheckTXT(const char * cFile);
+bool CheckTXT(const char * cFile);
 bool ZDecompress(uchar * InputData, ulong InputDataSize, uchar ** OutputData, ulong * OutputDataSize, ulong StartSize);		// Compress data with zlib
 bool ZCompress(uchar * InputData, ulong InputDataSize, uchar ** OutputData, ulong * OutputDataSize);						// Decompress data with zlib
 bool CompressTxt(const char * cFile);
@@ -156,7 +156,7 @@ bool ZCompress(uchar * InputData, ulong InputDataSize, uchar ** OutputData, ulon
 	return true;
 }
 
-int CheckTXT(const char * cFile)
+bool CheckTXT(const char * cFile)
 {
 	FILE * ptrInputF;					// Input file stream
 	sPS2CmpTxtHeader PS2CmpTxtHeader;	// Compressed *.txt header
@@ -225,6 +225,8 @@ bool CompressTxt(const char * cFile)
 
 	// Close output file
 	fclose(ptrOutFile);
+
+	return true;
 }
 
 bool DecompressTxt(const char * cFile)
@@ -275,6 +277,8 @@ bool DecompressTxt(const char * cFile)
 
 	// Close output file
 	fclose(ptrOutFile);
+
+	return true;
 }
 
 void main(int argc, char * argv[])
@@ -285,7 +289,7 @@ void main(int argc, char * argv[])
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017, Alexey Leushin. All rights reserved.");
+		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.");
 		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop *.txt file txttool.exe \n2) Command line\\Batch - txttool [file_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");

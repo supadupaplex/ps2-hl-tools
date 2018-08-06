@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -54,7 +54,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.0"
+#define PROG_VERSION "1.01"
 
 ////////// Typedefs //////////
 typedef unsigned short int ushort;		// 2 byte unsigned variable
@@ -97,7 +97,7 @@ struct sPS2CmpTxtHeader
 		strncpy(this->Signature, "COMPRESSED", 10);
 	}
 
-	char Check()
+	bool Check()
 	{
 		char Temp[11];
 
