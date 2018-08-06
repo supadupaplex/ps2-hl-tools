@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or

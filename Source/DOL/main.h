@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2018, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -49,19 +49,31 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <windows.h>	// CreateDitectoryA()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.08"
+#define PROG_VERSION "1.11"
 #define DOL_TEXTURE_HEADER_SIZE 0x20
 #define BMP_TEXTURE_HEADER_SIZE 0x35
 #define MDL_TEXTURE_HEADER_SIZE 0x00
 #define EIGHT_BIT_PALETTE_ELEMENTS_COUNT 256
 #define DOL_BMP_PALETTE_ELEMENT_SIZE 4
 #define MDL_PALETTE_ELEMENT_SIZE 3
-#define PSI_MIN_DIMENSION 16
+#define PSI_MIN_DIMENSION 8
 #define NOTEXTURES_MODEL 0
 #define NORMAL_MODEL 1
-#define SUB_MODEL 2
+#define SEQ_MODEL 2
 #define DUMMY_MODEL 3
 #define UNKNOWN_MODEL -1
+#define MDL_DEF_REF_SZ 0x68
+#define MDL_FILE_REF_SZ 0x48
+#define MDL_FILE_REF_SPACE 0x20
+
+// Keywords
+#define KWD_FADESTART "fadestart"
+#define KWD_FADEEND "fadeend"
+#define KWD_MAXPARTS "maxparts"
+#define KWD_NUMGROUPS "groups"
+#define KWD_GROUP "group"
+#define KWD_PART "part"
+#define KWD_BLANK "blank"
 
 ////////// Typedefs //////////
 typedef unsigned short int ushort;
@@ -112,6 +124,10 @@ struct sModelHeader
 	void UpdateFromFile(FILE ** ptrFile)	// Update header from file
 	{
 		FileReadBlock(ptrFile, this, 0, sizeof(sModelHeader));
+
+		// I found some models that have long non null terminated internal name string
+		// that was causing creepy beeping during printf(), so there is a fix for that
+		Name[63] = '\0';
 	}
 
 	int CheckModel()					// Check model type
@@ -127,7 +143,7 @@ struct sModelHeader
 			}
 			else if (this->Signature[3] == 'Q')
 			{
-				return SUB_MODEL;
+				return SEQ_MODEL;
 			}
 		}
 
@@ -141,6 +157,26 @@ struct sModelHeader
 
 		strcpy(this->Name, NewName);
 	}
+};
+
+// Extra section of DOL model headers
+#pragma pack(1)					// Eliminate unwanted 0x00 bytes
+struct sDOLExtraSection
+{
+	ulong LODDataOffset;	// Points to a location of a LOD data section
+	uchar MaxBodyParts;		// Maximum number of body parts inside one body group
+	uchar NumBodyGroups;	// How many body groups are present in the model (setting both MaxBodyParts and NumBodyGroups to 0 disables LODs)
+	uchar Magic[2];			// Filled with zeroes
+	ulong FadeStart;		// Model fade: start distance
+	ulong FadeEnd;			// Model fade: end distance
+};
+
+// DOL model LOD table entry
+#pragma pack(1)					// Eliminate unwanted 0x00 bytes
+struct sDOLLODEntry
+{
+	ulong LODCount;			// Number of LODs for the specific body part (excluding full quality body part (LOD0))
+	ulong LODDistances[4];	// Distances at which corresponding LODs are displayed
 };
 
 // MDL/DOL texture table entry
