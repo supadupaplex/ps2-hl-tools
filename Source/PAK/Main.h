@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017-2018, Alexey Leushin
+Copyright (c) 2017-2020, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -54,7 +54,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.3"
+#define PROG_VERSION "1.31"
 #define PAK_NORMAL 0
 #define PAK_COMPRESSED 1
 #define PAK_UNKNOWN -1

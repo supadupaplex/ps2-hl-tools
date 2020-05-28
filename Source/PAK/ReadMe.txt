@@ -1,5 +1,5 @@
 PS2 HL PAK tool
-Developed by Alexey Leushin, Novosibirsk, 2017-2018.
+Developed by Alexey Leushin, Novosibirsk, 2017-2020
 Zlib library is used within this program to perform DEFLATE\INFLATE operations.
 
 This tool is intended to extract or create new PS2 Half-life PAK files.
@@ -7,6 +7,7 @@ This tool is intended to extract or create new PS2 Half-life PAK files.
 Changelog:
 - v1.22: I found out that address of GLOBAL.PAK deviates, so I added possibility to enter it manually
 - v1.3:  I fixed address calculation for GLOBAL.PAK so there is no more need to manually enter it
+- v1.31: Added support for 16-byte aligned non-compressed PAKs
 
 How to use:
 1) Windows explorer - drag and drop file or directory on paktool.exe
@@ -18,6 +19,7 @@ How to use:
 	- test			- print info about PAK file
 	- extract		- extract PAK
 	- pack			- pack files from specified directory to normal PAK
+	- pack16		- pack files from specified directory to normal PAK with 16-byte alignment (i.e. pausegui.pak)
 	- cpack			- pack files from specified directory to compressed PAK
 	- gpack			- pack files from specified directory to GLOBAL.PAK and GRESTORE.PAK
 	- decompress	- decompress PAK
@@ -36,7 +38,7 @@ And finally, some formal stuff:
 =====================================================================
 LICENSE
 =====================================================================
-Copyright (c) 2017-2018, Alexey Leushin
+Copyright (c) 2017-2020, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or

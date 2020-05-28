@@ -1,6 +1,6 @@
 /*
 =====================================================================
-Copyright (c) 2017-2018, Alexey Leushin
+Copyright (c) 2017-2020, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or
@@ -724,7 +724,7 @@ void main(int argc, char * argv[])
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.");
+		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2020, Alexey Leushin. All rights reserved.");
 		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop file or directory on paktool.exe \n2) Command line\\Batch - paktool [file\\dir_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
@@ -734,16 +734,26 @@ void main(int argc, char * argv[])
 	{
 		if (CheckDir(argv[1]) == true)						// Folder
 		{
-			puts("\nChoose PAK type: \nn - normal \nc - compressed \ng - global");
+			puts("\nChoose PAK type:");
+			puts(" n - normal, align=2048 [PAK0, DECALS, UGMESAVE, DICTS]");
+			puts(" s - normal, align=16 [pausegui, discfail]");
+			puts(" c - compressed, align=16 [VALVE, DECAY, MIDHL, MIDTOH, MIDDECAY, FRONTEND,");
+			puts("\tGUISOUND, GDECALS, CGMESAVE, SYSSAVE, SYSTEM]");
+			puts(" g - global, compressed, align=16, *.spz patch [GLOBAL+GRESTORE]");
 			do
 			{
 				Action = _getch();
-			} while (Action != 'n' && Action != 'c' && Action != 'g');
+			} while (Action != 'n' && Action != 'c' && Action != 'g' && Action != 's');
 
 			if (Action == 'n')
 			{
-				// Pack
+				// Normal
 				PackPAK(argv[1], PS2HL_NPAK_SEG_SIZE);
+			}
+			else if (Action == 's')
+			{
+				// Normal with small alignment (pausegui.pak)
+				PackPAK(argv[1], PS2HL_CPAK_SEG_SIZE);
 			}
 			else if (Action == 'c')
 			{
@@ -864,6 +874,18 @@ void main(int argc, char * argv[])
 			{
 				// Pack
 				PackPAK(argv[2], PS2HL_NPAK_SEG_SIZE);
+			}
+			else
+			{
+				puts("Specified path isn't directory ...");
+			}
+		}
+		else if (!strcmp(argv[1], "pack16") == true)
+		{
+			if (CheckDir(argv[2]) == true)
+			{
+				// Pack
+				PackPAK(argv[2], PS2HL_CPAK_SEG_SIZE);
 			}
 			else
 			{
