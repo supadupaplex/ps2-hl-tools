@@ -4,7 +4,7 @@ echo Converting all *.nod files in current folder ...
 
 echo __________________________________________________
 
-for %%I in (*.nod) do nodtool.exe  %%I
+for %%I in (*.nod) do nodtool.exe ^"%%I^"
 
 echo __________________________________________________
 

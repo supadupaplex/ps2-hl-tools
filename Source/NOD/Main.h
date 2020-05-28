@@ -49,16 +49,19 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <windows.h>	// CreateDitectoryA()
 
 ////////// Definitions //////////
-#define PROG_VERSION "0.8"
+#define PROG_VERSION "0.9"
 
-// Error codes
-#define NO_ERRORS			0
-#define ERR_NOD_VERSION		1
-#define ERR_NOD_CORRUPTED	2
-#define ERR_NOD_ALREADY_PS2	3
+// Node format specificators
+enum eNodFormats
+{
+	NOD_FORMAT_PC,
+	NOD_FORMAT_PS2,
+	NOD_ERR_VERSION,
+	NOD_ERR_UNKNOWN
+};
 
 // Proper node graph version
-#define NOD_VESION		16
+#define NOD_SUPPORTED_VESION		16
 
 // PS2 extra bytes in CNode structure (took those from PS2's c0a0.nod)
 #define PS2_CN_EXTRA1	0x00000000
@@ -117,7 +120,7 @@ struct sCGraph
 };
 
 #pragma pack(1)				// Fix unwanted 0x00 bytes in structure
-struct sCNode
+struct sCNode_PC
 {
 	uchar SomeData[SZ_PC_CNODE];
 };
@@ -125,7 +128,7 @@ struct sCNode
 #pragma pack(1)				// Fix unwanted 0x00 bytes in structure
 struct sCNode_PS2
 {
-	sCNode CNode;
+	sCNode_PC CNode;
 	ulong ExtraField1;
 	ulong ExtraField2;
 };
@@ -143,7 +146,7 @@ struct sDIST_INFO
 };
 
 #pragma pack(1)				// Fix unwanted 0x00 bytes in structure
-struct sPS2NOD
+struct sNodeGraph
 {
 	int Version;			// Should be 16
 	sCGraph CGraph;
@@ -166,60 +169,81 @@ struct sPS2NOD
 		Hashes = NULL;
 	}
 
-	int UpdateFromPCFile(FILE **ptrFile)
+	void Deinit()
 	{
-		// Load first part
+		// Free memory
+		if (CNodes != NULL)		free(CNodes);
+		if (CLinks != NULL)		free(CLinks);
+		if (DistInfo != NULL)	free(DistInfo);
+		if (Routes != NULL)		free(Routes);
+		if (Hashes != NULL)		free(Hashes);
+	}
+
+	int LoadAndCheckHeader(FILE **ptrFile)
+	{
+		// Load header
 		FileReadBlock(ptrFile, this, 0, sizeof(Version) + sizeof(sCGraph));
 
+		// Calculate base size
+		ulong BaseSize =	sizeof(Version) +
+							sizeof(sCGraph) +
+							sizeof(sCLink) * CGraph.LinkCount +
+							sizeof(sDIST_INFO) * CGraph.NodeCount +
+							sizeof(char) * CGraph.RouteCount +
+							sizeof(short) * CGraph.HashCount;
+
 		// Check file
-		if (Version == 16)
+		if (Version == NOD_SUPPORTED_VESION)
 		{
-			if (FileSize(ptrFile) != (	sizeof(int) +
-										sizeof(sCGraph) +
-										sizeof(sCNode) * CGraph.NodeCount +
-										sizeof(sCLink) * CGraph.LinkCount +
-										sizeof(sDIST_INFO) * CGraph.NodeCount +
-										sizeof(char) * CGraph.RouteCount +
-										sizeof(short) * CGraph.HashCount))
+			if (FileSize(ptrFile) == (BaseSize + sizeof(sCNode_PC) * CGraph.NodeCount))
 			{
-				if (FileSize(ptrFile) == (	sizeof(int) +
-											sizeof(sCGraph) +
-											sizeof(sCNode_PS2) * CGraph.NodeCount +
-											sizeof(sCLink) * CGraph.LinkCount +
-											sizeof(sDIST_INFO) * CGraph.NodeCount +
-											sizeof(char) * CGraph.RouteCount +
-											sizeof(short) * CGraph.HashCount))
-				{
-					return ERR_NOD_ALREADY_PS2;
-				}
-				else
-				{
-					return ERR_NOD_CORRUPTED;
-				}
+				return NOD_FORMAT_PC;
+			}
+			else if (FileSize(ptrFile) == (BaseSize + sizeof(sCNode_PS2) * CGraph.NodeCount))
+			{
+				return NOD_FORMAT_PS2;
+			}
+			else
+			{
+				return NOD_ERR_UNKNOWN;
 			}
 		}
 		else
 		{
-			return ERR_NOD_VERSION;
+			return NOD_ERR_VERSION;
 		}
+	}
 
-		// Allocate memory for structures
+	int UpdateFromFile(FILE **ptrFile)
+	{
+		// Load and check header
+		int Result = LoadAndCheckHeader(ptrFile);
+		if (Result == NOD_ERR_VERSION || Result == NOD_ERR_UNKNOWN)
+			return Result;
+
+		// Allocate memory for structures //
+
+		// Nodes
 		if (CNodes != NULL)
 			free(CNodes);
 		CNodes = (sCNode_PS2 *)		calloc(sizeof(sCNode_PS2) * CGraph.NodeCount, 1);
 
+		// Links
 		if (CLinks != NULL)
 			free(CLinks);
 		CLinks = (sCLink *)			calloc(sizeof(sCLink) * CGraph.LinkCount, 1);
 
+		// Dists
 		if (DistInfo != NULL)
 			free(DistInfo);
 		DistInfo = (sDIST_INFO *)	calloc(sizeof(sDIST_INFO) * CGraph.NodeCount, 1);
 
+		// Routes
 		if (Routes != NULL)
 			free(Routes);
 		Routes = (char *)			calloc(sizeof(char) * CGraph.RouteCount, 1);
 
+		// Hashes
 		if (Hashes != NULL)
 			free(Hashes);
 		Hashes = (short *)			calloc(sizeof(short) * CGraph.HashCount, 1);
@@ -232,53 +256,84 @@ struct sPS2NOD
 			exit(EXIT_FAILURE);
 		}
 
-		// Load structures
+		// Load structures //
 		ulong Pointer = sizeof(int) + sizeof(sCGraph);
 
-		// Combined loading with transforming to PS2 format
-		for (int i = 0; i < CGraph.NodeCount; i++)
+		// Nodes
+		if (Result == NOD_FORMAT_PS2)
 		{
-			FileReadBlock(ptrFile, &CNodes[i], Pointer, sizeof(sCNode));
-			Pointer += sizeof(sCNode);
+			FileReadBlock(ptrFile, CNodes, Pointer, sizeof(sCNode_PS2) * CGraph.NodeCount);
+			Pointer += sizeof(sCNode_PS2) * CGraph.NodeCount;
+		}
+		else if (Result == NOD_FORMAT_PC)
+		{
+			// Convert to PS2 format on the fly
+			for (int i = 0; i < CGraph.NodeCount; i++)
+			{
+				FileReadBlock(ptrFile, &CNodes[i], Pointer, sizeof(sCNode_PC));
+				Pointer += sizeof(sCNode_PC);
 
-			CNodes[i].ExtraField1 = PS2_CN_EXTRA1;
-			CNodes[i].ExtraField2 = PS2_CN_EXTRA2;
+				CNodes[i].ExtraField1 = PS2_CN_EXTRA1;
+				CNodes[i].ExtraField2 = PS2_CN_EXTRA2;
+			}
 		}
 
+		// Links
 		FileReadBlock(ptrFile, CLinks, Pointer, sizeof(sCLink) * CGraph.LinkCount);
-
 		Pointer += sizeof(sCLink) * CGraph.LinkCount;
+
+		// Dists
 		FileReadBlock(ptrFile, DistInfo, Pointer, sizeof(sDIST_INFO) * CGraph.NodeCount);
-
 		Pointer += sizeof(sDIST_INFO) * CGraph.NodeCount;
-		FileReadBlock(ptrFile, Routes, Pointer, sizeof(char) * CGraph.RouteCount);
 
+		// Routes
+		FileReadBlock(ptrFile, Routes, Pointer, sizeof(char) * CGraph.RouteCount);
 		Pointer += sizeof(char) * CGraph.RouteCount;
+		
+		// Hashes
 		FileReadBlock(ptrFile, Hashes, Pointer, sizeof(short) * CGraph.HashCount);
 
-		return NO_ERRORS;
+		return Result;
 	}
 
-	void SaveToFile(FILE **ptrFile)
+	void SaveToFile(FILE **ptrFile, eNodFormats Format)
 	{
-		// Save structures to file
+		// Save structures to file //
 		ulong Pointer = 0;
+
+		// Header
 		FileWriteBlock(ptrFile, this, 0, sizeof(Version) + sizeof(sCGraph));
-		
 		Pointer += sizeof(int) + sizeof(sCGraph);
-		FileWriteBlock(ptrFile, CNodes, Pointer, sizeof(sCNode_PS2) * CGraph.NodeCount);
 
-		Pointer += sizeof(sCNode_PS2) * CGraph.NodeCount;
-		FileWriteBlock(ptrFile, CLinks, Pointer, sizeof(sCLink) * CGraph.LinkCount);
+		// Nodes
+		if (Format == NOD_FORMAT_PC)
+		{
+			// Convert to PC format on the fly
+			for (int i = 0; i < CGraph.NodeCount; i++)
+			{
+				FileWriteBlock(ptrFile, &CNodes[i], sizeof(sCNode_PC));
+				Pointer += sizeof(sCNode_PS2);
+			}
+		}
+		else
+		{
+			FileWriteBlock(ptrFile, CNodes, sizeof(sCNode_PS2) * CGraph.NodeCount);
+			Pointer += sizeof(sCNode_PS2) * CGraph.NodeCount;
+		}
 
+		// Links
+		FileWriteBlock(ptrFile, CLinks, sizeof(sCLink) * CGraph.LinkCount);
 		Pointer += sizeof(sCLink) * CGraph.LinkCount;
-		FileWriteBlock(ptrFile, DistInfo, Pointer, sizeof(sDIST_INFO) * CGraph.NodeCount);
 
+		// Dists
+		FileWriteBlock(ptrFile, DistInfo, sizeof(sDIST_INFO) * CGraph.NodeCount);
 		Pointer += sizeof(sDIST_INFO) * CGraph.NodeCount;
-		FileWriteBlock(ptrFile, Routes, Pointer, sizeof(char) * CGraph.RouteCount);
 
+		// Routes
+		FileWriteBlock(ptrFile, Routes, sizeof(char) * CGraph.RouteCount);
 		Pointer += sizeof(char) * CGraph.RouteCount;
-		FileWriteBlock(ptrFile, Hashes, Pointer, sizeof(short) * CGraph.HashCount);
 
+		// Hashes
+		FileWriteBlock(ptrFile, Hashes, sizeof(short) * CGraph.HashCount);
 	}
 };

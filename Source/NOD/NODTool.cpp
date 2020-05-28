@@ -38,7 +38,99 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "Main.h"				// Main header
 
 ////////// Functions //////////
+int TestFile(const char * FileName);
+void ConvertNOD(const char * FileName);
 
+int TestFile(const char * FileName)
+{
+	FILE * ptrFile;
+	sNodeGraph NGraph;
+
+	printf("\nTesting file: %s \n", FileName);
+
+	// Open file for reading
+	SafeFileOpen(&ptrFile, FileName, "rb");
+
+	// Load and check header
+	NGraph.Init();
+	int Result = NGraph.LoadAndCheckHeader(&ptrFile);
+
+	// Show info
+	switch (Result)
+	{
+	case NOD_FORMAT_PC:
+		puts("Proper PC file \n");
+		break;
+	case NOD_FORMAT_PS2:
+		puts("Proper PS2 file \n");
+		break;
+	case NOD_ERR_VERSION:
+		printf("Unknown file: version %d, should be 16 \n\n", NGraph.Version);
+		break;
+	case NOD_ERR_UNKNOWN:
+		puts("Unknown file: size mismatch \n");
+		break;
+	}
+
+	// Close file
+	fclose(ptrFile);
+
+	// Return result
+	return Result;
+}
+
+void ConvertNOD(const char * FileName)
+{
+	FILE * ptrFile;
+	sNodeGraph NGraph;
+	int Result;
+
+	printf("\nProcessing file: %s \n", FileName);
+
+	// Open file for reading
+	SafeFileOpen(&ptrFile, FileName, "rb");
+
+	// Load data
+	NGraph.Init();
+	Result = NGraph.UpdateFromFile(&ptrFile);
+	if (Result == NOD_ERR_VERSION)
+	{
+		printf("Unknown file: version %d, should be 16 \nPress any key to exit... \n\n", NGraph.Version);
+		getch();
+		fclose(ptrFile);
+		return;
+	}
+	else if (Result == NOD_ERR_UNKNOWN)
+	{
+		puts("Unknown file: size mismatch \nPress any key to exit... \n");
+		getch();
+		fclose(ptrFile);
+		return;
+	}
+
+	// Show some info
+	printf("Properties: \n Nodes: %d \n Links: %d \n Routes: %d \n Hashes: %d \n", NGraph.CGraph.NodeCount, NGraph.CGraph.LinkCount, NGraph.CGraph.RouteCount, NGraph.CGraph.HashCount);
+
+	// Close file
+	fclose(ptrFile);
+
+	// Open file for writing
+	SafeFileOpen(&ptrFile, FileName, "wb");
+
+	// Write data
+	if (Result == NOD_FORMAT_PS2)
+		NGraph.SaveToFile(&ptrFile, NOD_FORMAT_PC);
+	else
+		NGraph.SaveToFile(&ptrFile, NOD_FORMAT_PS2);
+
+	// Free memory
+	NGraph.Deinit();
+
+	// Close file
+	fclose(ptrFile);
+
+	puts("\nDone! \n");
+}
 
 void main(int argc, char * argv[])
 {
@@ -59,51 +151,30 @@ void main(int argc, char * argv[])
 
 		if (!strcmp(cExtension, ".nod") == true)
 		{
-			FILE * ptrFile;
-			sPS2NOD PS2NOD;
-			int Result;
-
-			printf("\nProcessing file: %s \n", argv[1]);
-
-			// Open file for reading
-			SafeFileOpen(&ptrFile, argv[1], "rb");
-
-			// Load data
-			PS2NOD.Init();
-			Result = PS2NOD.UpdateFromPCFile(&ptrFile);
-			if (Result != NO_ERRORS)
-			{
-				if (Result == ERR_NOD_VERSION)
-					puts("Wrong graph version!");
-				if (Result == ERR_NOD_CORRUPTED)
-					puts("Node file size mismatch! (probably corrupted)");
-				if (Result == ERR_NOD_ALREADY_PS2)
-					puts("Node file already in PS2 format!");
-				getch();
-				exit(EXIT_FAILURE);
-			}
-
-			// Show some info
-			printf("Properties: \n Nodes: %d \n Links: %d \n Routes: %d \n Hashes: %d \n", PS2NOD.CGraph.NodeCount, PS2NOD.CGraph.LinkCount, PS2NOD.CGraph.RouteCount, PS2NOD.CGraph.HashCount);
-
-			// Close file
-			fclose(ptrFile);
-
-			// Open file for writing
-			SafeFileOpen(&ptrFile, argv[1], "wb"); 
-
-			// Write data
-			PS2NOD.SaveToFile(&ptrFile);
-
-			// Close file
-			fclose(ptrFile);
-
-			puts("\nDone! \n");
-			//getch();
+			ConvertNOD(argv[1]);
 		}
-		else												// Unsupported file
+		else
 		{
 			puts("Unsupported file ...");
+		}
+	}
+	else if (argc == 3)
+	{
+		if (!strcmp(argv[1], "test") == true)
+		{
+			FileGetExtension(argv[2], cExtension, sizeof(cExtension));
+			if (!strcmp(cExtension, ".nod") == true)
+			{
+				TestFile(argv[2]);
+			}
+			else
+			{
+				puts("Unsupported file ...");
+			}
+		}
+		else
+		{
+			puts("Can't recognise arguments ...");
 		}
 	}
 	else
