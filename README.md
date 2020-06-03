@@ -1,5 +1,4 @@
 # -------------------------- PS2 HL tools --------------------------
-If you like my work and want to buy me a beer =), you can do it here: paypal.me/AlexeyLN
 
 Those tools are intended to convert/modify some resources of PS2 Half-life port.
 
@@ -25,4 +24,8 @@ http://www.moddb.com/members/supadupaplex/mods
 My tool that converts Dreamcast models to PC format:
 https://github.com/supadupaplex/PVR2MDL
 
-P.S. Sorry for my bad english and some stupid code =)
+P.S. If you like my work and want to buy me a beer =),
+you can do it here: paypal.me/AlexeyLN
+
+Author: supadupaplex
+License: check out license.txt
