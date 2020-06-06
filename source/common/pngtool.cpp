@@ -12,7 +12,10 @@
 // http://www.libpng.org/pub/png/spec/1.2/PNG-Filters.html
 
 ////////// Includes //////////
+#include <stdio.h>
+#include <string.h>
 #include <math.h>
+#include "util.h"
 #include "types.h"
 #include "fops.h"
 #include "zlib.h"
@@ -58,7 +61,7 @@ sPNGData * PNGReadChunk(FILE ** ptrFile, const char * Marker)		// Markers: "IHDR
 
 				// Check chunk size
 				memcpy(&ChunkDataSize, &FileData[i - 4], sizeof(ChunkDataSize));
-				ChunkDataSize = _byteswap_ulong(ChunkDataSize);						// Swap endian
+				ChunkDataSize = UTIL_BSWAP32(ChunkDataSize);						// Swap endian
 
 				// Allocate memory for data from this chunk
 				ChunkData = (uchar *)malloc(ChunkDataSize);
@@ -126,11 +129,11 @@ void PNGWriteChunk(FILE ** ptrFile, const char * Marker, sPNGData * Chunk)	// Ma
 	CRC = crc32(0L, (const Bytef *) Marker, 4);
 	if (Chunk->DataSize != 0)
 		CRC = crc32(CRC, Chunk->Data, Chunk->DataSize);
-	CRC = _byteswap_ulong(CRC);
+	CRC = UTIL_BSWAP32(CRC);
 
 	// Write chunk size
 	ChunkSize = Chunk->DataSize;
-	ChunkSize = _byteswap_ulong(ChunkSize);
+	ChunkSize = UTIL_BSWAP32(ChunkSize);
 	FileWriteBlock(ptrFile, &ChunkSize, sizeof(ChunkSize));
 
 	// Write chunk marker
@@ -155,11 +158,11 @@ void PNGWriteChunk(FILE ** ptrFile, const char * Marker, const void * Data, ulon
 	CRC = crc32(0L, (const Bytef *)Marker, 4);
 	if (DataSize != 0)
 		CRC = crc32(CRC, (const Bytef *) Data, DataSize);
-	CRC = _byteswap_ulong(CRC);
+	CRC = UTIL_BSWAP32(CRC);
 
 	// Write chunk size
 	ChunkSize = DataSize;
-	ChunkSize = _byteswap_ulong(ChunkSize);
+	ChunkSize = UTIL_BSWAP32(ChunkSize);
 	FileWriteBlock(ptrFile, &ChunkSize, sizeof(ChunkSize));
 
 	// Write chunk marker
@@ -698,7 +701,7 @@ bool ZDecompress(uchar * InputData, ulong InputDataSize, uchar ** OutputData, ul
 		infstream.avail_out = (uint)NewDataSize;		// Size of output data
 
 														// Decompression work
-		if (inflateInit(&infstream) != Z_OK) //, ZLIB_VERSION, sizeof(infstream)) != Z_OK)
+		if (inflateInit(&infstream) != Z_OK)
 		{
 			puts("Zlib: can't decompress data ...");
 			return false;

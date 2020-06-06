@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 // 
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"
 
 ////////// Functions //////////
@@ -54,7 +55,7 @@ bool ConvertPNGtoPSI(const char * FileName)
 	sPNGData * PNGBitmap;
 	uchar BytesPerPixel;
 
-	char OutFile[255];
+	char OutFile[PATH_LEN];
 	char TexName[64];
 
 	// Open file
@@ -164,7 +165,7 @@ bool ConvertPSItoPNG(const char * FileName)
 	sPNGData PNGBitmap;
 	uchar BytesPerPixel;
 
-	char OutFile[255];
+	char OutFile[PATH_LEN];
 
 	uchar * RawBitmap;
 	ulong RawBitmapSize;
@@ -360,7 +361,7 @@ int main(int argc, char * argv[])
 		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop image file on psitool.exe \n2) Command line/Batch - psitool [image_file_name]  \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{

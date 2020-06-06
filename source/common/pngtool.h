@@ -52,13 +52,13 @@ struct sPNGHeader
 
 	void SwapEndian()			// Swap endian after reading or before writing to file
 	{
-		this->Signature1 = _byteswap_ulong(this->Signature1);
-		this->Signature2 = _byteswap_ulong(this->Signature2);
-		this->IHDTSize = _byteswap_ulong(this->IHDTSize);
-		this->IHDT = _byteswap_ulong(this->IHDT);
-		this->Width = _byteswap_ulong(this->Width);
-		this->Height = _byteswap_ulong(this->Height);
-		this->CRC32 = _byteswap_ulong(this->CRC32);
+		this->Signature1 = UTIL_BSWAP32(this->Signature1);
+		this->Signature2 = UTIL_BSWAP32(this->Signature2);
+		this->IHDTSize = UTIL_BSWAP32(this->IHDTSize);
+		this->IHDT = UTIL_BSWAP32(this->IHDT);
+		this->Width = UTIL_BSWAP32(this->Width);
+		this->Height = UTIL_BSWAP32(this->Height);
+		this->CRC32 = UTIL_BSWAP32(this->CRC32);
 	}
 
 	void UpdateFromFile(FILE ** ptrFile)

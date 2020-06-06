@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 //
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"
 
 ////////// Functions //////////
@@ -46,7 +47,7 @@ void ConvertSPZToSPR(const char * cFile, bool Resize, bool Linear)
 {
 	FILE * ptrSPZ;
 	FILE * ptrSPR;
-	char cOutputFileName[255];
+	char cOutputFileName[PATH_LEN];
 
 	sSPZHeader SPZHeader;
 	sSPZFrameTableEntry * SPZFrameTable;
@@ -217,7 +218,7 @@ void ConvertSPRToSPZ(const char * cFile, bool Linear)
 {
 	FILE * ptrSPZ;
 	FILE * ptrSPR;
-	char cOutputFileName[255];
+	char cOutputFileName[PATH_LEN];
 
 	sSPRHeader SPRHeader;
 	sSPRFrameHeader * SPRFrameHeaders;
@@ -438,7 +439,7 @@ int main(int argc, char * argv[])
 		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2019, Alexey Leushin. All rights reserved.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop sprite file on sprtool.exe \n2) Command line\\Batch - sprtool (noresize/lin) [file_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{

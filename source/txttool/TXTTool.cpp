@@ -38,6 +38,7 @@ POSSIBILITY OF SUCH DAMAGE.
 
 ////////// Includes //////////
 #include "main.h"				// Main header
+#include "util.h"
 
 ////////// Functions //////////
 bool CheckTXT(const char * cFile);
@@ -80,7 +81,7 @@ bool ZDecompress(uchar * InputData, ulong InputDataSize, uchar ** OutputData, ul
 		infstream.avail_out = (uint)NewDataSize;		// Size of output data
 
 		// Decompression work
-		if (inflateInit(&infstream) != Z_OK)//(&infstream, ZLIB_VERSION, sizeof(infstream)) != Z_OK)
+		if (inflateInit(&infstream) != Z_OK)
 		{
 			puts("Zlib: can't decompress data ...");
 			return false;
@@ -293,7 +294,7 @@ int main(int argc, char * argv[])
 		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop *.txt file txttool.exe \n2) Command line\\Batch - txttool [file_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{

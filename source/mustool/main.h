@@ -34,20 +34,16 @@ POSSIBILITY OF SUCH DAMAGE.
 // This file contains all definitions and declarations
 //
 
-#pragma once
+#ifndef MAIN_H
+#define MAIN_H
 
 ////////// Includes??? //////////
 #include <stdio.h>		// puts(), printf(), sscanf(), snprintf()
-#include <conio.h>		// _getch()
-#include <direct.h>		// _mkdir()
 #include <string.h>		// strcpy(), strcat(), strlen(), strtok(), strncpy()
 #include <malloc.h>		// malloc(), free()
 #include <stdlib.h>		// exit()
 #include <math.h>		// round(), ceil()
 #include <ctype.h>		// tolower()
-#include <sys\stat.h>	// stat()
-#include <windows.h>	// CreateDitectoryA()
-#include <intrin.h>		// Byte swap functions (swap endian for VAG)
 
 ////////// Definitions //////////
 #define PROG_VERSION "1.23"
@@ -89,11 +85,11 @@ struct sVAGHeader
 
 	void SwapEndian()						// Swap endian after reading and before writing to file
 	{
-		Signature = _byteswap_ulong(Signature);
-		Version = _byteswap_ulong(Version);
-		Magic1 = _byteswap_ulong(Magic1);
-		DataSize = _byteswap_ulong(DataSize);
-		SamplingF = _byteswap_ulong(SamplingF);
+		Signature = UTIL_BSWAP32(Signature);
+		Version = UTIL_BSWAP32(Version);
+		Magic1 = UTIL_BSWAP32(Magic1);
+		DataSize = UTIL_BSWAP32(DataSize);
+		SamplingF = UTIL_BSWAP32(SamplingF);
 	}
 
 	uchar CheckType()
@@ -418,3 +414,5 @@ union uWAVHeader
 		}
 	}
 };
+
+#endif // MAIN_H

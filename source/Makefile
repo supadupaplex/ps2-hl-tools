@@ -1,5 +1,5 @@
-# This works only on Windows so far
-# I used MSYS + Mingw32 4.8.2
+# Tested on Windows (MSYS + Mingw32 4.8.2)
+# and linux (Ubuntu 18 + GCC 7.5.0 + gcc & g++ multilibs)
 
 
 # dirs
@@ -43,13 +43,17 @@ release: clean-all all
 	zip -r $(RELDIR)/release-latest.zip $(BLDDIR)/
 
 # tools
-%tool: zlib-build
+%tool: cpu-chk zlib-build
 	cd $@ && "$(MAKE)"
 	mv $@/bin $(BLDDIR)/$@
 
 %tool-clean:
 	cd $(firstword $(subst -, ,$@)) && "$(MAKE)" clean
 	rm -rf $(BLDDIR)/$(firstword $(subst -, ,$@))
+
+# can work on x86 only
+cpu-chk:
+	uname -a | grep 'x86'
 
 dirs:
 	mkdir -p $(COMOBJ)
@@ -61,18 +65,17 @@ clean-all: clean zlib-clean
 
 # ZLIB
 zlib-build: dirs
+	cd $(ZLIB_DIR)	&& tar -xzf zlib-$(ZLIB_VER).tar.gz
 ifeq ($(OS),Windows_NT)
 	# windows
-	cd $(ZLIB_DIR)	&& tar -xzf zlib-$(ZLIB_VER).tar.gz
-	cd $(ZLIB_WDIR)	&& "$(MAKE)" -fwin32/Makefile.gcc
+	cd $(ZLIB_WDIR)	&& CFLAGS=-m32 "$(MAKE)" -fwin32/Makefile.gcc
+else
+	# other os
+	cd $(ZLIB_WDIR)	&& CFLAGS=-m32 ./configure && "$(MAKE)"
+endif
 	cp $(ZLIB_WDIR)/libz.a	$(COMOBJ)/
 	cp $(ZLIB_WDIR)/zlib.h	$(COMDIR)/
 	cp $(ZLIB_WDIR)/zconf.h	$(COMDIR)/
-else
-	# other os
-	echo "Not implemented"
-	exit 1
-endif
 
 zlib-clean:
 	-rm -rf $(ZLIB_WDIR)

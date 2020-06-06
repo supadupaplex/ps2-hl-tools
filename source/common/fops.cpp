@@ -5,6 +5,20 @@
 // This file contains functions that perform various file operations
 //
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#ifdef _WIN32
+	#include <windows.h>
+#else
+	#include <sys/types.h>
+	#include <sys/stat.h>
+	#include <unistd.h>
+	#include <dirent.h>
+#endif
+
 #include "fops.h"
 
 //#define FDEBUG // Enable/disable debug
@@ -39,9 +53,10 @@ void FileWriteBlock(FILE **ptrDstFile, const void * SrcBuff, size_t Size)
 	fwrite(SrcBuff, (size_t)1, Size, *ptrDstFile);		// Write block
 }
 
-void SafeFileOpen(FILE **ptrFile, const char * FileName, char * Mode)
+void SafeFileOpen(FILE **ptrFile, const char * FileName, const char * Mode)
 {
-	fopen_s(ptrFile, FileName, Mode);
+	*ptrFile = fopen(FileName, Mode);
+
 	if (*ptrFile == NULL)
 	{
 		printf("Error: can't open file: %s \n\n", FileName);
@@ -63,7 +78,7 @@ void FileGetName(const char * Path, char * OutputBuffer, int OutputBufferSize, b
 
 	for (int i = End; i >= 0; i--)
 	{
-		if (Path[i] == '\\')
+		if (Path[i] == DIR_DELIM_CH)
 		{
 			Start = i;
 			break;
@@ -74,7 +89,6 @@ void FileGetName(const char * Path, char * OutputBuffer, int OutputBufferSize, b
 			End = i;
 			WithExtension = true;
 		}
-
 	}
 
 	memcpy(OutputBuffer, Path + (Start + 1), (End - 1) - Start);
@@ -88,7 +102,7 @@ void FileGetFullName(const char * Path, char * OutputBuffer, int OutputBufferSiz
 
 	for (int i = End; i >= 0; i--)
 	{
-		if (Path[i] == '\\')
+		if (Path[i] == DIR_DELIM_CH)
 			break;
 
 		if (Path[i] == '.' && SearchExtension == true)
@@ -96,7 +110,6 @@ void FileGetFullName(const char * Path, char * OutputBuffer, int OutputBufferSiz
 			End = i;
 			SearchExtension = false;
 		}
-
 	}
 
 	memcpy(OutputBuffer, Path, End);
@@ -111,7 +124,7 @@ void FileGetPath(const char * Path, char * OutputBuffer, int OutputBufferSize)
 	
 	for (int i = 0; i < Len; i++)
 	{
-		if (Path[i] == '\\')
+		if (Path[i] == DIR_DELIM_CH)
 			End = i + 1;
 	}
 
@@ -124,7 +137,7 @@ bool CheckFile(char * FileName)
 	FILE * ptrTestFile;
 	bool Result = false;
 
-	fopen_s(&ptrTestFile, FileName, "r");
+	ptrTestFile = fopen(FileName, "r");
 	if (ptrTestFile != NULL)
 	{
 		Result = true;
@@ -167,34 +180,22 @@ void FileSafeRename(char * OldName, char * NewName)
 	rename(OldName, NewName);
 }
 
-void PatchSlashes(char * cPathBuff, int BuffSize, bool SlashToBackslash)
+void PatchSlashes(char * cPathBuff, int BuffSize, bool PakToFs)
 {
-	if (SlashToBackslash == true)
+	if (PakToFs == true)
 	{
+		// Convert slashes in path from PAK to FS
 		for (int i = 0; i < BuffSize; i++)
-			if (cPathBuff[i] == '/')
-				cPathBuff[i] = '\\';
+			if (cPathBuff[i] == DIR_NOT_DELIM_CH)
+				cPathBuff[i] = DIR_DELIM_CH;
 	}
 	else
 	{
+		// Convert slashes in path from FS to PAK
 		for (int i = 0; i < BuffSize; i++)
 			if (cPathBuff[i] == '\\')
 				cPathBuff[i] = '/';
 	}
-}
-
-//// PLATFORM-DEPENDENT CODE BELOW ////
-
-bool CheckDir(const char * Path)
-{
-	struct stat DirStat;
-
-	stat(Path, &DirStat);
-
-	if (DirStat.st_mode & S_IFDIR)
-		return true;
-	else
-		return false;
 }
 
 void GenerateFolders(char * cPath)
@@ -206,15 +207,15 @@ void GenerateFolders(char * cPath)
 
 	strcpy(PathBuffer, cPath);			// Save cPath to buffer, to avoid error, when parsing (const char *)
 
-	cDir = strtok(PathBuffer, "\\");	// First run: count words
+	cDir = strtok(PathBuffer, DIR_DELIM);	// First run: count words
 	while (cDir != NULL)
 	{
 		Counter++;
-		cDir = strtok(NULL, "\\");
+		cDir = strtok(NULL, DIR_DELIM);
 	}
 
 	strcpy(PathBuffer, cPath);			// Give strtok() fresh string
-	cDir = strtok(PathBuffer, "\\");	// Second run: create folders
+	cDir = strtok(PathBuffer, DIR_DELIM);	// Second run: create folders
 	while (cDir != NULL)
 	{
 		strcat(cCurrent, cDir);
@@ -223,13 +224,22 @@ void GenerateFolders(char * cPath)
 			NewDir(cCurrent);
 			Counter--;
 		}
-		strcat(cCurrent, "\\");
-		cDir = strtok(NULL, "\\");
+		strcat(cCurrent, DIR_DELIM);
+		cDir = strtok(NULL, DIR_DELIM);
 	}
 }
 
 
+//// PLATFORM-DEPENDENT CODE BELOW ////
+
 #ifdef _WIN32
+
+bool CheckDir(const char * Path)
+{
+	DWORD Attr = GetFileAttributesA(Path);
+
+	return (Attr != INVALID_FILE_ATTRIBUTES) && (Attr & FILE_ATTRIBUTE_DIRECTORY);
+}
 
 void NewDir(const char * DirName)
 {
@@ -268,7 +278,7 @@ static void DirGetBase(char * buf) // Gets base dir for currrent level (internal
 	for (int lv = 0; lv < GI.CurLev; lv++)
 	{
 		strcat(buf, GI.data[lv].cFileName);
-		strcat(buf, DIR_SDELIM);
+		strcat(buf, DIR_DELIM);
 	}
 
 	//DPRINT("[iter] get base: %s\n", buf);
@@ -296,8 +306,8 @@ void DirIterInit(const char * Dir)
 	// Store base dir (with deliminer at the end)
 	strcpy(GI.BaseDir, Dir);
 	int len = strlen(GI.BaseDir);
-	if (!len || (len && GI.BaseDir[len-1] != DIR_CDELIM))
-		strcat(GI.BaseDir, DIR_SDELIM);
+	if (!len || (len && GI.BaseDir[len-1] != DIR_DELIM_CH))
+		strcat(GI.BaseDir, DIR_DELIM);
 
 	DPRINT("[iter]->(re)init, base: %s\n", GI.BaseDir);
 }
@@ -362,7 +372,7 @@ const char * DirIterGet()
 	if (GI.CurLev)
 	{
 		DPRINT("[iter] leaving dir\n");
-		
+
 		// Go one level down (outside)
 		if (GI.hFind[GI.CurLev] != INVALID_HANDLE_VALUE)
 			FindClose(GI.hFind[GI.CurLev]);
@@ -375,42 +385,159 @@ const char * DirIterGet()
 	return NULL;
 }
 
-#else // ToDo
+#else // linux
 
-// <filesystem> should be good for other OSes
-	/*#include <filesystem>			// Directory iterators
-	using namespace std;
-	using namespace std::tr2::sys;
+bool CheckDir(const char * Path)
+{
+	struct stat DirStat;
 
-	// Count files in folder
-	recursive_directory_iterator it1(cFolder), it2(cFolder), end;	// Recursive iterators
-	FileCounter = 0;
-	for (; it1 != end; ++it1)
-		if (!is_directory(it1->path()))
-			FileCounter++;
+	stat(Path, &DirStat);
 
-	// Allocate memory for list of files
-	FileList = (sFileListEntry *)malloc(sizeof(sFileListEntry)*FileCounter);
-	printf("Found %i files. \nPacking ...\n", FileCounter);
+	if (DirStat.st_mode & S_IFDIR)
+		return true;
+	else
+		return false;
+}
 
-	// Fill list 
-	FileCounter = 0;
-	for (; it2 != end; ++it2)
+void NewDir(const char * DirName)
+{
+	mkdir(DirName, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
+
+void ProgGetPath(char * OutputBuffer, int OutputBufferSize)
+{
+	// https://stackoverflow.com/questions/758018/path-to-binary-in-c
+	readlink("/proc/self/exe", OutputBuffer, OutputBufferSize);
+}
+
+// Some older compilers have bad time with `#include <filesystem>`, so I added alternative iterator
+#define NUM_LEV 20 // How deep dir iterator can go
+static struct
+{
+	int CurLev;						// Current dir level
+	DIR * dir[NUM_LEV];				// Stores search progress
+	struct dirent * ent[NUM_LEV];	// Stores file data
+	char BaseDir[PATH_LEN];			// Stores base dir for current session
+	char RetPath[PATH_LEN];			// Stores resulting file name
+} GI;
+static void DirGetBase(char * buf) // Gets base dir for currrent level (internal func)
+{
+	// Base dir
+	strcpy(buf, GI.BaseDir);
+
+	// Next dir levels
+	for (int lv = 0; lv < GI.CurLev; lv++)
 	{
-		if (!is_directory(it2->path()))
+		strcat(buf, GI.ent[lv]->d_name);
+		strcat(buf, DIR_DELIM);
+	}
+
+	//DPRINT("[iter] get base: %s\n", buf);
+}
+void DirIterClose()
+{
+	// Close active searches
+	for (int lv = 0; lv <= GI.CurLev; lv++)
+	{
+		if (GI.dir != NULL)
+			closedir(GI.dir[lv]);
+	}
+
+	// Reset list
+	GI.CurLev = 0;
+	GI.dir[0] = NULL;
+	GI.BaseDir[0] = '\0';
+	GI.RetPath[0] = '\0';
+}
+void DirIterInit(const char * Dir)
+{
+	// Close prev session
+	DirIterClose();
+
+	// Store base dir (with deliminer at the end)
+	strcpy(GI.BaseDir, Dir);
+	int len = strlen(GI.BaseDir);
+	if (!len || (len && GI.BaseDir[len-1] != DIR_DELIM_CH))
+		strcat(GI.BaseDir, DIR_DELIM);
+
+	DPRINT("[iter]->(re)init, base: %s\n", GI.BaseDir);
+}
+const char * DirIterGet()
+{
+	char SearchStr[PATH_LEN] = "";
+
+	bool Found = false;
+	if (GI.dir[GI.CurLev] == NULL)
+	{
+		DPRINT("[iter] get first\n");
+
+		// Get base dir for current level
+		DirGetBase(SearchStr);
+
+		// Find first entry
+		GI.dir[GI.CurLev] = opendir(SearchStr);
+		if (GI.dir[GI.CurLev])
 		{
-			strcpy(cFile, (it2->path().parent_path().string().c_str()));
-			strcat(cFile, "\\");
-			strcat(cFile, (it2->path().filename().string().c_str()));
-
-			SafeFileOpen(&ptrInputF, cFile, "rb");
-			//printf("%s, %i\n", cFile, FileSize(&ptrInputF));
-
-			FileList[FileCounter].Update(cFile, FileSize(&ptrInputF));
-			FileCounter++;
-
-			fclose(ptrInputF);
+			GI.ent[GI.CurLev] = readdir(GI.dir[GI.CurLev]);
+			if (GI.ent[GI.CurLev] != NULL)
+				Found = true;
 		}
-	}*/
+	}
+	else
+	{
+		DPRINT("[iter] get next\n");
+
+		// Find next entry
+		GI.ent[GI.CurLev] = readdir(GI.dir[GI.CurLev]);
+		if (GI.ent[GI.CurLev] != NULL)
+			Found = true;
+	}
+
+	if (Found)
+	{
+		// Found something
+		if (GI.ent[GI.CurLev]->d_type == DT_DIR)
+		{
+			/// Dir ///
+
+			// Skip '.' and '..' recursively
+			if (!strcmp(GI.ent[GI.CurLev]->d_name, ".") || !strcmp(GI.ent[GI.CurLev]->d_name, ".."))
+				return DirIterGet();
+
+			DPRINT("[iter] entering dir: %s\n", GI.ent[GI.CurLev]->d_name);
+
+			// Go one level up (inside directory)
+			if (++(GI.CurLev) > NUM_LEV)
+			{
+				DPRINT("[%s] subdir level overflow!\n", __func__);
+				exit(1);
+			}
+			GI.dir[GI.CurLev] = NULL;
+			return DirIterGet();
+		}
+
+		/// File ///
+		DirGetBase(GI.RetPath);
+		strcat(GI.RetPath, GI.ent[GI.CurLev]->d_name);
+		DPRINT("[iter]<-return file: %s\n", GI.RetPath);
+		return GI.RetPath;
+	}
+
+	// Not found anything
+	if (GI.CurLev)
+	{
+		DPRINT("[iter] leaving dir\n");
+
+		// Go one level down (outside)
+		if (GI.dir[GI.CurLev] != NULL)
+			closedir(GI.dir[GI.CurLev]);
+		(GI.CurLev)--;
+		return DirIterGet();
+	}
+
+	// End - stop
+	DPRINT("[iter]<-not found, stop\n");
+	return NULL;
+}
 
 #endif

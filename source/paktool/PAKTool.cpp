@@ -37,6 +37,7 @@ POSSIBILITY OF SUCH DAMAGE.
 //
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"				// Main header
 
 ////////// Functions //////////
@@ -85,7 +86,7 @@ bool ZDecompress(uchar * InputData, ulong InputDataSize, uchar ** OutputData, ul
 		infstream.avail_out = (uint)NewDataSize;		// Size of output data
 
 		// Decompression work
-		if (inflateInit(&infstream) != Z_OK) //, ZLIB_VERSION, sizeof(infstream)) != Z_OK)
+		if (inflateInit(&infstream) != Z_OK)
 		{
 			puts("Zlib: can't decompress data ...");
 			return false;
@@ -237,9 +238,9 @@ void ExtractPAK(const char * cFile)
 
 	uint FileCounter;
 
-	char cFolder[255];		// Output folder name
-	char cOutFile[255];		// PAK file name
-	char cTemp[255];		// Temporary string for concatenation
+	char cFolder[PATH_LEN];		// Output folder name
+	char cOutFile[PATH_LEN];	// PAK file name
+	char cTemp[PATH_LEN];		// Temporary string for concatenation
 
 	// Open PAK file
 	SafeFileOpen(&ptrInputF, cFile, "rb");
@@ -285,7 +286,7 @@ void ExtractPAK(const char * cFile)
 
 			// Get full file name
 			strcpy(cOutFile, cFolder);
-			strcat(cOutFile, "\\");
+			strcat(cOutFile, DIR_DELIM);
 			strcat(cOutFile, PS2PAKFileEntry.FileName);
 			PatchSlashes(cOutFile, strlen(cOutFile), true);
 
@@ -301,7 +302,7 @@ void ExtractPAK(const char * cFile)
 			if (TempBuffer == NULL)
 			{
 				puts("Unable to allocate memory ...");
-				_getch();
+				UTIL_WAIT_KEY;
 				exit(1);
 			}
 			FileReadBlock(&ptrInputF, TempBuffer, PS2PAKFileEntry.FileOffset, PS2PAKFileEntry.FileSize);
@@ -339,9 +340,9 @@ void PackPAK(const char * cFolder, ulong SegmentSize)
 	ulong PS2PAKTableSizeCounter;		// Counters
 	ulong PS2PAKDataSizeCounter;		//
 
-	char cFile[255];			// Input file name
-	const char * NextFile;		// Next file name from iterator
-	char cOutFile[255];			// Output PAK file name
+	char cFile[PATH_LEN];			// Input file name
+	const char * NextFile;			// Next file name from iterator
+	char cOutFile[PATH_LEN];		// Output PAK file name
 
 
 	// Count files in folder
@@ -469,8 +470,8 @@ bool DecompressPAK(const char * cFile)
 	ulong DDataSize;	// Decompressed data size
 
 	uPS2PAKHeader PS2PAKHeader;	// PAK header
-	char cOutFile[255];			// Output file name
-	char cTemp[255];			// Temporary string for concatenation
+	char cOutFile[PATH_LEN];	// Output file name
+	char cTemp[PATH_LEN];		// Temporary string for concatenation
 
 	// Open and check compressed PAK
 	SafeFileOpen(&ptrInputF, cFile, "rb");
@@ -540,8 +541,8 @@ bool CompressPAK(const char * cFile)
 	ulong CDataSize;	// Compressed data size
 
 	uPS2PAKHeader PS2PAKHeader;	// PAK header
-	char cOutFile[255];			// Output file name
-	char cTemp[255];			// Temporary string for concatenation
+	char cOutFile[PATH_LEN];	// Output file name
+	char cTemp[PATH_LEN];		// Temporary string for concatenation
 
 	// Open and check PAK
 	SafeFileOpen(&ptrInputF, cFile, "rb");
@@ -602,8 +603,8 @@ void ConvertToGRE(const char * cFile)
 {
 	FILE * ptrInPAK;						// Input file stream
 	FILE * ptrOutPAK;						// Output file stream
-	char cOutFileName[255];					// Output file name
-	char cTemp[255];						// Temporary string for concatenation
+	char cOutFileName[PATH_LEN];			// Output file name
+	char cTemp[PATH_LEN];					// Temporary string for concatenation
 
 	uPS2PAKHeader PS2PAKHeader;				// PAK file header
 	char * PAKData;							// PAK file raw data
@@ -635,7 +636,7 @@ void ConvertToGRE(const char * cFile)
 	if (PAKData == NULL)
 	{
 		puts("Unable to allocate memory ...");
-		_getch();
+		UTIL_WAIT_KEY;
 		exit(1);
 	}
 	FileReadBlock(&ptrInPAK, PAKData, 0, PAKDataSize);
@@ -647,7 +648,7 @@ void ConvertToGRE(const char * cFile)
 	if (PAKFileTable == NULL)
 	{
 		puts("Unable to allocate memory ...");
-		_getch();
+		UTIL_WAIT_KEY;
 		exit(1);
 	}
 	FileReadBlock(&ptrInPAK, PAKFileTable, PS2PAKHeader.Normal.TableOffset, PAKFileTableSize);
@@ -700,7 +701,7 @@ void ConvertToGRE(const char * cFile)
 	{
 		puts("Warning! Model files should not be inside GLOBAL.PAK and GRESTORE.PAK.");
 		puts("You may experience problems with those PAK's. Press any key to confirm ... \n");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 
 	// Free memory
@@ -714,10 +715,10 @@ void ConvertToGRE(const char * cFile)
 
 int main(int argc, char * argv[])
 {
-	char cPath[255];
-	char cFName[255];
-	char cTempFileName[255];
-	char cNewFileName[255];
+	char cPath[PATH_LEN];
+	char cFName[PATH_LEN];
+	char cTempFileName[PATH_LEN];
+	char cNewFileName[PATH_LEN];
 	char Action;
 
 	printf("PS2 HL PAK tool v%s \n", PROG_VERSION);
@@ -728,7 +729,7 @@ int main(int argc, char * argv[])
 		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
 		puts("How to use: \n1) Windows explorer - drag and drop file or directory on paktool.exe \n2) Command line\\Batch - paktool [file\\dir_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{
@@ -742,7 +743,8 @@ int main(int argc, char * argv[])
 			puts(" g - global, compressed, align=16, *.spz patch [GLOBAL+GRESTORE]");
 			do
 			{
-				Action = _getch();
+				fflush(stdout);
+				Action = getc(stdin);
 			} while (Action != 'n' && Action != 'c' && Action != 'g' && Action != 's');
 
 			if (Action == 'n')

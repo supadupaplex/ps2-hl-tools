@@ -34,22 +34,18 @@ POSSIBILITY OF SUCH DAMAGE.
 // This file contains all definitions and declarations
 //
 
-#pragma once
+#ifndef MAIN_H
+#define MAIN_H
 
 ////////// Includes //////////
 #include <stdio.h>		// puts(), printf(), gets_s(), sscanf(), snprintf(), rename(), remove()
-#include <conio.h>		// _getch()
-#include <direct.h>		// _mkdir()
 #include <string.h>		// strcpy(), strcat(), strlen(), strtok(), strncpy(), memset()
 #include <malloc.h>		// malloc(), free()
 #include <stdlib.h>		// exit()
 #include <math.h>		// round(), sqrt(), ceil()
 #include <ctype.h>		// tolower()
-#include <sys\stat.h>	// stat()
-#include <windows.h>	// CreateDitectoryA()
 
 ////////// Zlib stuff //////////
-//#define ZLIB_WINAPI
 #include "zlib.h"
 #include <assert.h>
 
@@ -94,7 +90,10 @@ union uPS2PAKHeader
 
 	void UpdateNormal(int NewTableOffset, int NewTableSize)
 	{
-		strcpy(this->Normal.Signature, "PACK");
+		this->Normal.Signature[0]='P';
+		this->Normal.Signature[1]='A';
+		this->Normal.Signature[2]='C';
+		this->Normal.Signature[3]='K';
 		this->Normal.TableOffset = NewTableOffset;
 		this->Normal.TableSize = NewTableSize;
 	}
@@ -154,8 +153,8 @@ struct sPS2PAKFileEntry
 #pragma pack(1)				// Fix unwanted 0x00 bytes in structure
 struct sFileListEntry
 {
-	char  FileName[255];	// File name
-	ulong FileSize;			// File size
+	char  FileName[PATH_LEN];	// File name
+	ulong FileSize;				// File size
 
 	void Update(char * NewFileName, ulong NewFileSize)
 	{
@@ -220,3 +219,5 @@ struct sSPZFrameTableEntry
 		FileReadBlock(ptrFile, this, Address, sizeof(sSPZFrameTableEntry));
 	}
 };
+
+#endif // MAIN_H

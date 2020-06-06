@@ -34,22 +34,18 @@ POSSIBILITY OF SUCH DAMAGE.
 // This file contains all definitions and declarations
 //
 
-#pragma once
+#ifndef MAIN_H
+#define MAIN_H
 
 ////////// Includes //////////
 #include <stdio.h>		// puts(), printf(), sscanf(), snprintf(), rename(), remove()
-#include <conio.h>		// _getch()
-#include <direct.h>		// _mkdir()
 #include <string.h>		// strcpy(), strcat(), strlen(), strtok(), strncpy(), memset()
 #include <malloc.h>		// malloc(), free()
 #include <stdlib.h>		// exit()
 #include <math.h>		// round(), sqrt(), ceil()
 #include <ctype.h>		// tolower()
-#include <sys\stat.h>	// stat()
-#include <windows.h>	// CreateDitectoryA()
 
 ////////// Zlib stuff //////////
-//#define ZLIB_WINAPI
 #include "zlib.h"
 #include <assert.h>
 
@@ -95,3 +91,5 @@ struct sPS2CmpTxtHeader
 
 
 };
+
+#endif // MAIN_H

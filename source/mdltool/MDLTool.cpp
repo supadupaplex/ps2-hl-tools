@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 //
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"
 
 ////////// Global variables //////////
@@ -126,7 +127,7 @@ void ConvertDOLToMDL(const char * FileName)		// Convert model from PS2 to PC for
 	FILE * ptrInFile;
 	char cNewModelName[64];
 	FILE * ptrOutFile;
-	char cOutFileName[255];
+	char cOutFileName[PATH_LEN];
 
 	ulong ModelSize;
 
@@ -254,7 +255,7 @@ void ConvertMDLToDOL(const char * FileName)	// Convert model from PC to PS2 form
 	
 	FILE * ptrInFile;
 	FILE * ptrOutFile;
-	char cOutFileName[255];
+	char cOutFileName[PATH_LEN];
 	char cNewModelName[64];
 	char cTextureName[64];
 
@@ -297,8 +298,8 @@ void ConvertMDLToDOL(const char * FileName)	// Convert model from PC to PS2 form
 		FileGetExtension(ModelTextureTable[i].Name, TexExtension, sizeof(TexExtension));
 		if (!strcmp(TexExtension, ".pvr") == true)
 		{
-			puts("Dreamcast HL model conversion is not suppotred ...");
-			getch();
+			puts("Dreamcast model conversion is not suppotred ...");
+			UTIL_WAIT_KEY;
 			exit(EXIT_FAILURE);
 		}
 
@@ -432,7 +433,7 @@ void ConvertSubmodel(const char * FileName, char * OriginalExtension, char * Tar
 
 	int ModelType;
 	char NewModelName[64];
-	char OutputFile[255];
+	char OutputFile[PATH_LEN];
 
 	puts("Patching submodel ...");
 
@@ -494,7 +495,7 @@ void ConvertDummySubmodel(const char * FileName, char * OriginalExtension, char 
 	char * ModelData;
 	ulong ModelDataSize;
 
-	char OutputFile[255];
+	char OutputFile[PATH_LEN];
 	char NewInternalName[64];
 
 	puts("Patching dummy submodel ...");
@@ -530,7 +531,7 @@ void GetExtraDOLData(const char * FileName)
 {
 	FILE * ptrInFile;
 	FILE * ptrOutFile;
-	char cOutFileName[256];
+	char cOutFileName[PATH_LEN];
 	sDOLExtraSection DOLExtraSect;
 
 	// Open input file
@@ -654,7 +655,7 @@ ushort CountSymbols(char * Buffer, char Symbol)
 
 bool CheckExtraFile(const char * FileName)
 {
-	char cInFileName[256];	// Input file name
+	char cInFileName[PATH_LEN]; // Input file name
 	FILE * ptrInFile;		// Input file stream
 	char Buffer[128];		// Text buffer
 	ushort Open = 0;		// Open brackets count
@@ -834,7 +835,7 @@ void GetValues(char * Buffer, ulong * Values, uchar ValuesCount)
 bool TranslateExtraFile(const char * FileName, sDOLExtraSection * DOLExtraSect, sDOLLODEntry ** LODTable)
 {
 	FILE * ptrInFile;					// Input file stream
-	char cInFileName[256];				// Input file name
+	char cInFileName[PATH_LEN];			// Input file name
 	char Buffer[128] = "Text";			// Text buffer
 	char PrevBuffer[128] = "Text";		// Previous state of text buffer
 	bool Group = true;					// Map or model
@@ -1138,8 +1139,8 @@ void ExtractDOLTextures(const char * FileName)	// Extract textures from PS2 mode
 	FILE * ptrInFile;
 	sBMPHeader BMPHeader;						// BMP header
 	FILE * ptrBMPOutput;
-	char cOutFileName[255];
-	char cOutFolderName[255];
+	char cOutFileName[PATH_LEN];
+	char cOutFolderName[PATH_LEN];
 
 	// Open file
 	SafeFileOpen(&ptrInFile, FileName, "rb");
@@ -1164,7 +1165,8 @@ void ExtractDOLTextures(const char * FileName)	// Extract textures from PS2 mode
 
 	// Prepare folder for output files
 	strcpy(cOutFolderName, FileName);
-	strcat(cOutFolderName, "-textures\\");
+	strcat(cOutFolderName, "-textures");
+	strcat(cOutFolderName, DIR_DELIM);
 	NewDir(cOutFolderName);
 
 	uint BitmapOffset;
@@ -1225,8 +1227,8 @@ void ExtractMDLTextures(const char * FileName)	// Extract textures from PC model
 	FILE * ptrInFile;
 	sBMPHeader BMPHeader;						// BMP header
 	FILE * ptrBMPOutput;
-	char cOutFileName[255];
-	char cOutFolderName[255];
+	char cOutFileName[PATH_LEN];
+	char cOutFolderName[PATH_LEN];
 
 	// Open file
 	SafeFileOpen(&ptrInFile, FileName, "rb");
@@ -1251,7 +1253,8 @@ void ExtractMDLTextures(const char * FileName)	// Extract textures from PC model
 
 	// Prepare folder for output files
 	strcpy(cOutFolderName, FileName);
-	strcat(cOutFolderName, "-textures\\");
+	strcat(cOutFolderName, "-textures");
+	strcat(cOutFolderName, DIR_DELIM);
 	NewDir(cOutFolderName);
 
 	uint BitmapOffset;
@@ -1368,7 +1371,7 @@ void SeqReport(const char * FileName)
 	int SeqCount;				// Sequences count
 	FILE * ptrInFile;
 	FILE * ptrOutFile;
-	char cOutFileName[255];
+	char cOutFileName[PATH_LEN];
 
 	// Open input file
 	SafeFileOpen(&ptrInFile, FileName, "rb");
@@ -1422,7 +1425,7 @@ int main(int argc, char * argv[])
 {
 	FILE * ptrInputFile;
 	FILE * ptrConfigFile;
-	char ConfigFilePath[255];
+	char ConfigFilePath[PATH_LEN];
 	char Line[80];
 	char cFileExtension[5];
 
@@ -1437,7 +1440,7 @@ int main(int argc, char * argv[])
 		puts("How to use: \n1) Windows explorer - drag and drop model file on mdltool.exe \n2) Command line/Batch - mdltool [model_file_name] \nOptional features:\n - extract textures: mdltool extract [filename]\n - report sequences: mdltool seqrep [filename]  \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
 
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)		// Convert model
 	{

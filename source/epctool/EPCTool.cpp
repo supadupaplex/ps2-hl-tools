@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 //
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"				// Main header
 
 ////////// Defines /////////////
@@ -116,13 +117,13 @@ uint SetSubmodels(char * Buffer)
 				if (Number > 31)
 				{
 					puts("Waning: found submodel number > 31, ignoring. \nPress any key to confirm ...");
-					getch();
+					UTIL_WAIT_KEY;
 					continue;
 				}
 				else if (Number == 0)
 				{
 					puts("Waning: submodel number 0 can result in unexpected consequences. \nPress any key to confirm ...");
-					getch();
+					UTIL_WAIT_KEY;
 				}
 
 				// Set up submodel flag
@@ -341,7 +342,7 @@ bool TranslateInputFile(const char * cFile)
 	puts("Writing item List ...");
 
 	// Open output file
-	char OutFileName[256];
+	char OutFileName[PATH_LEN];
 	FileGetPath(cFile, OutFileName, sizeof(OutFileName));
 	strcat(OutFileName, "extraprecache.epc");
 	SafeFileOpen(&ptrOutputF, OutFileName, "wb");
@@ -462,17 +463,17 @@ bool TranslateSourceFile(const char * cFile)
 	int SeqCount;				// Sequences count
 	FILE * ptrInFile;			// Input file
 	FILE * ptrOutFile;			// Output file
-	char cOutFileName[256];		// Output file name
+	char cOutFileName[PATH_LEN]; // Output file name
 
 	cSourceList srcList;		// List to store references
-	char LineBuf[256];			// Text line buffer
+	char LineBuf[PATH_LEN];		// Text line buffer
 
-	char Dir1[256] = ".\\";
-	char Dir2[256] = ".\\";
+	char Dir1[PATH_LEN] = ".";
+	char Dir2[PATH_LEN] = ".";
 	short MapIndex = -1;
 	short ModelIndex = -1;
-	char cSeqBuf[256] = "";
-	char cSeqNumBuf[256] = "";
+	char cSeqBuf[PATH_LEN] = "";
+	char cSeqNumBuf[PATH_LEN] = "";
 
 	// Init list
 	srcList.Init();
@@ -578,13 +579,13 @@ bool TranslateSourceFile(const char * cFile)
 		{
 			fgets(Dir1, sizeof(Dir1), ptrInFile);
 			AddTerminator(Dir1, '\n');
-			strcat(Dir1, "\\");
+			strcat(Dir1, DIR_DELIM);
 		}
 		else if (!strcmp(LineBuf, KWD_DIR2))
 		{
 			fgets(Dir2, sizeof(Dir2), ptrInFile);
 			AddTerminator(Dir2, '\n');
-			strcat(Dir2, "\\");
+			strcat(Dir2, DIR_DELIM);
 		}
 	}
 
@@ -661,7 +662,7 @@ int main(int argc, char * argv[])
 		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2018, Alexey Leushin. All rights reserved.");
 		puts("How to use: \n1) Windows explorer - drag and drop *.txt file on epctool.exe \n2) Command line\\Batch - epctool [file_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{

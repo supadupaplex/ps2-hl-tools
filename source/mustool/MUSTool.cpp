@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 //
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"
 
 ////////// Functions //////////
@@ -72,7 +73,7 @@ void UnpatchVAG(const char * FileName)		// Remove header from VAG file (PS2 HL m
 		printf("Internal name: \"%s\", Channels: %i, Sampling frequency: %i \n", VAGHeader.Name, (VAGHeader.Channels == 0 ? 1 : VAGHeader.Channels), VAGHeader.SamplingF);
 		printf("Warning: PS2 HL supports only 1 channel 44100 Hz audio. \nYou may encounter problems with this file. \n");
 		puts("Press any key to confirm ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (VAGHeader.CheckType() == VAG_PS2)
 	{
@@ -241,7 +242,7 @@ void UnpatchWAV(const char * FileName)		// Remove header from WAV file
 			WAVHeader.Normal.WaveChunk.BitsPerSample);
 		printf("Warning: PS2 HL supports only 8-bit 1 channel 11025/22050/44100 Hz audio. \nYou may encounter problems with this file. \n");
 		puts("Press any key to confirm ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else
 	{
@@ -427,7 +428,7 @@ int main(int argc, char * argv[])
 {
 	FILE * ptrInputFile;
 	FILE * ptrConfigFile;
-	char ConfigFilePath[255];
+	char ConfigFilePath[PATH_LEN];
 	char Line[80];
 
 	// Output info
@@ -445,7 +446,7 @@ int main(int argc, char * argv[])
 		puts("\nFor more info read ReadMe file.\n");
 		puts("Press any key to exit ...");
 
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{

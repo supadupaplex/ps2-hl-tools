@@ -10,7 +10,8 @@ files before use.
 
 How to use:
 1) Windows explorer - drag and drop *.nod file on nodtool.exe
-2) Command line\Batch - nodtool.exe [file_name]
+2) Command line\Batch - nodtool [file_name]
+	Check file: nodtool test [file_name]
 
 And finally, some formal stuff:
 =====================================================================

@@ -10,7 +10,7 @@ VPATH=$(COMDIR)
 CC=g++
 LD=g++
 CFLAGS=-c -Wall -m32 -O1 -I$(COMDIR)
-LDFLAGS=
+LDFLAGS=-m32
 
 
 NAME=epctool

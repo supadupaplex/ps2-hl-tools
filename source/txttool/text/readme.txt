@@ -9,7 +9,7 @@ Changelog:
 
 How to use:
 1) Windows explorer - drag and drop *.txt file on txttool.exe
-2) Command line\Batch - txttool.exe [file_name]
+2) Command line\Batch - txttool [file_name]
 
 And finally, some formal stuff:
 =====================================================================

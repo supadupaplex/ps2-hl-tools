@@ -9,7 +9,7 @@ in "YA PS2HL" with "sv_ps2_precache" and "sv_supadupaplex" cvars set to 1 or 2.
 
 How to use:
 1) Windows explorer - drag and drop *.txt file (list) or *.inf file (source) on epctool.exe
-2) Command line\Batch - epctool.exe [file_name]
+2) Command line\Batch - epctool [file_name]
 
 Formatting:
 MAP_NAME1

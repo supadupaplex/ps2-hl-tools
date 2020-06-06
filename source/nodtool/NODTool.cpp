@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 //
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"				// Main header
 
 ////////// Functions //////////
@@ -96,14 +97,14 @@ void ConvertNOD(const char * FileName)
 	if (Result == NOD_ERR_VERSION)
 	{
 		printf("Unknown file: version %d, should be 16 \nPress any key to exit... \n\n", NGraph.Version);
-		getch();
+		UTIL_WAIT_KEY;
 		fclose(ptrFile);
 		return;
 	}
 	else if (Result == NOD_ERR_UNKNOWN)
 	{
 		puts("Unknown file: size mismatch \nPress any key to exit... \n");
-		getch();
+		UTIL_WAIT_KEY;
 		fclose(ptrFile);
 		return;
 	}
@@ -141,9 +142,11 @@ int main(int argc, char * argv[])
 	if (argc == 1)
 	{
 		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2018, Alexey Leushin. All rights reserved.");
-		puts("How to use: \n1) Windows explorer - drag and drop *.nod file on nodtool.exe \n2) Command line\\Batch - nodtool [file_name] \n\nFor more info read ReadMe.txt \n");
+		puts("How to use: \n1) Windows explorer - drag and drop *.nod file on nodtool.exe \n2) Command line\\Batch - nodtool [file_name] \n");
+		puts("\tCheck file: nodtool test [file_name] \n\n");
+		puts("For more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{

@@ -34,19 +34,16 @@ POSSIBILITY OF SUCH DAMAGE.
 // This file contains all definitions and declarations
 //
 
-#pragma once
+#ifndef MAIN_H
+#define MAIN_H
 
 ////////// Includes //////////
 #include <stdio.h>		// puts(), printf(), sscanf(), snprintf()
-#include <conio.h>		// _getch()
-#include <direct.h>		// _mkdir()
 #include <string.h>		// strcpy(), strcat(), strlen(), strtok(), strncpy()
 #include <malloc.h>		// malloc(), free()
 #include <stdlib.h>		// exit()
 #include <math.h>		// round()
 #include <ctype.h>		// tolower()
-#include <sys\stat.h>	// stat()
-#include <windows.h>	// CreateDitectoryA()
 
 ////////// Definitions //////////
 #define PROG_VERSION "1.15"
@@ -303,7 +300,7 @@ struct sTexture
 		if (Palette == NULL || Bitmap == NULL)
 		{
 			puts("Unable to allocate memory ...");
-			_getch();
+			UTIL_WAIT_KEY;
 			exit(EXIT_FAILURE);
 		}
 
@@ -312,7 +309,7 @@ struct sTexture
 		FileReadBlock(ptrFile, (char *) Bitmap, FileBitmapOffset, FileBitmapSize);
 
 		// Update other fields
-		strcpy_s(this->Name, sizeof(Name), NewName);
+		strcpy(this->Name, NewName);
 		this->Width = NewWidth;
 		this->Height = NewHeight;
 		this->PaletteSize = FilePaletteSize;
@@ -343,7 +340,7 @@ struct sTexture
 		if (NewBitmap == NULL)
 		{
 			puts("Unable to allocate memory!");
-			_getch();
+			UTIL_WAIT_KEY;
 			exit(EXIT_FAILURE);
 		}
 
@@ -378,7 +375,7 @@ struct sTexture
 		if (NewBitmap == NULL)
 		{
 			puts("Unable to allocate memory!");
-			_getch();
+			UTIL_WAIT_KEY;
 			exit(EXIT_FAILURE);
 		}
 
@@ -427,7 +424,7 @@ struct sTexture
 		if (NewBitmap == NULL)
 		{
 			puts("Unable to allocate memory!");
-			_getch();
+			UTIL_WAIT_KEY;
 			exit(EXIT_FAILURE);
 		}
 
@@ -498,7 +495,7 @@ struct sTexture
 			if (NewPalette == NULL)
 			{
 				puts("Unable to allocate memory!");
-				_getch();
+				UTIL_WAIT_KEY;
 				exit(EXIT_FAILURE);
 			}
 
@@ -537,7 +534,7 @@ struct sTexture
 			if (NewPalette == NULL)
 			{
 				puts("Unable to allocate memory!");
-				_getch();
+				UTIL_WAIT_KEY;
 				exit(EXIT_FAILURE);
 			}
 
@@ -580,3 +577,5 @@ struct sTexture
 		}
 	}
 };
+
+#endif // MAIN_H

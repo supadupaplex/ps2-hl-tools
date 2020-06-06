@@ -35,6 +35,7 @@ POSSIBILITY OF SUCH DAMAGE.
 // 
 
 ////////// Includes //////////
+#include "util.h"
 #include "main.h"
 
 ////////// Includes //////////
@@ -70,7 +71,7 @@ bool ConvertPNGtoPHD(const char * FileName, bool HQResize)
 	sPNGData * PNGBitmap;
 	uchar BytesPerPixel;
 
-	char OutFile[255];
+	char OutFile[PATH_LEN];
 	char TexName[64];
 
 	// Open file
@@ -154,7 +155,7 @@ bool ConvertPHDtoPNG(const char * FileName)
 	sPNGData PNGBitmap;
 	uchar BytesPerPixel;
 
-	char OutFile[255];
+	char OutFile[PATH_LEN];
 
 	uchar * RawBitmap;
 	ulong RawBitmapSize;
@@ -277,7 +278,7 @@ void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHei
 	if (NewBitmap == NULL)
 	{
 		puts("Unable to allocate memory!");
-		_getch();
+		UTIL_WAIT_KEY;
 		exit(EXIT_FAILURE);
 	}
 
@@ -408,7 +409,7 @@ bool ConvertBMPtoPHD(const char * FileName, bool HQResize)
 	uchar * RGBAPalette;
 	ulong RGBAPaletteSize;
 
-	char OutFile[255];
+	char OutFile[PATH_LEN];
 	char TexName[64];
 
 	// Open file
@@ -514,7 +515,7 @@ bool ConvertPHDtoBMP(const char * FileName)
 	uchar * RGBAPalette;
 	ulong RGBAPaletteSize;
 
-	char OutFile[255];
+	char OutFile[PATH_LEN];
 
 	// Open PHD
 	SafeFileOpen(&ptrInputF, FileName, "rb");
@@ -610,7 +611,7 @@ void FlipBitmap(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height)		/
 	if (NewBitmap == NULL)
 	{
 		puts("Unable to allocate memory!");
-		_getch();
+		UTIL_WAIT_KEY;
 		exit(EXIT_FAILURE);
 	}
 
@@ -775,7 +776,7 @@ int main(int argc, char * argv[])
 		puts("How to use: \n1) Windows explorer - drag and drop PS2 HL Decal or PNG file on phdtool.exe \n2) Command line/Batch - phdtool [file_name]  \nOptional: convert to PNG - phdtool topng [phd_file_name] \n");
 		puts("\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
-		_getch();
+		UTIL_WAIT_KEY;
 	}
 	else if (argc == 2)
 	{
@@ -803,7 +804,8 @@ int main(int argc, char * argv[])
 			puts("\nChoose output format: \np - PNG \nb - BMP");
 			do
 			{
-				Action = _getch();
+				fflush(stdout);
+				Action = getc(stdin);
 			} while (Action != 'p' && Action != 'b');
 
 			if (Action == 'p')

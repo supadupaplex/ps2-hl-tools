@@ -34,19 +34,16 @@ POSSIBILITY OF SUCH DAMAGE.
 // This file contains all definitions and declarations
 //
 
-#pragma once
+#ifndef MAIN_H
+#define MAIN_H
 
 ////////// Includes //////////
 #include <stdio.h>		// puts(), printf(), sscanf(), snprintf(), rename(), remove()
-#include <conio.h>		// _getch()
-#include <direct.h>		// _mkdir()
 #include <string.h>		// strcpy(), strcat(), strlen(), strtok(), strncpy(), memset()
 #include <malloc.h>		// malloc(), free()
 #include <stdlib.h>		// exit()
 #include <math.h>		// round(), sqrt(), ceil()
 #include <ctype.h>		// tolower()
-#include <sys\stat.h>	// stat()
-#include <windows.h>	// CreateDitectoryA()
 
 ////////// Definitions //////////
 #define PROG_VERSION "0.9"
@@ -327,21 +324,21 @@ public:
 			ulong SeqTableSz;			// Sequences table size
 
 			FILE * ptrInFile;
-			char FileName[256];
-			char FullName[256];
+			char FileName[PATH_LEN];
+			char FullName[PATH_LEN];
 
 			// Try to open input file in primary directory
 			FileGetName(List[Index], FileName, sizeof(FileName), false);
 			strcat(FileName, ".dol");		// Try .dol
 			strcpy(FullName, ModelDir);
 			strcat(FullName, FileName);
-			fopen_s(&ptrInFile, FullName, "rb");
+			SafeFileOpen(&ptrInFile, FullName, "rb");
 			if (ptrInFile == NULL)
 			{
 				strcpy(FileName, FullName);
 				FileGetFullName(FileName, FullName, sizeof(FullName));
 				strcat(FullName, ".mdl");	// Try .mdl
-				fopen_s(&ptrInFile, FullName, "rb");
+				SafeFileOpen(&ptrInFile, FullName, "rb");
 			}
 
 			// Try to open input file in secondary directory
@@ -352,13 +349,13 @@ public:
 				strcat(FileName, ".dol");		// Try .dol
 				strcpy(FullName, ModelDir2);
 				strcat(FullName, FileName);
-				fopen_s(&ptrInFile, FullName, "rb");
+				SafeFileOpen(&ptrInFile, FullName, "rb");
 				if (ptrInFile == NULL)
 				{
 					strcpy(FileName, FullName);
 					FileGetFullName(FileName, FullName, sizeof(FullName));
 					strcat(FullName, ".mdl");	// Try .mdl
-					fopen_s(&ptrInFile, FullName, "rb");
+					SafeFileOpen(&ptrInFile, FullName, "rb");
 				}
 			}
 
@@ -366,7 +363,7 @@ public:
 			if (ptrInFile == NULL)
 			{
 				printf("Error: can't open file: %s \n", List[Index]);
-				if (!strcmp(ModelDir, ".\\") || !strcmp(ModelDir2, ".\\"))
+				if (!strcmp(ModelDir, ".") || !strcmp(ModelDir2, "."))
 				{
 					puts("You can specify model directories by adding those lines to .ini file:");
 					printf("\n%s:\nYOUR_MOD_DIR\\models\n\n%s:\nYOUR_VALVE_DIR\\models\n\n", KWD_DIR, KWD_DIR2);
@@ -510,3 +507,5 @@ struct sPS2HL_EPCModelEntry
 	uint Submodels;
 };
 */
+
+#endif // MAIN_H
