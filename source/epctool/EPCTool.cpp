@@ -48,6 +48,7 @@ uint SetSubmodels(char * Buffer);				// Set up submodels flags
 bool SetBit(uint * Input, uchar Bit);			// Set bit in 4-byte variable
 bool ValidateInputFile(const char * cFile);		// Validate input file
 bool TranslateInputFile(const char * cFile);	// Translate input file
+bool TranslateSourceFile(const char * cFile);	// Translate source file obtained from "YA PS2HL" mod
 
 ///////// Variables /////////
 
@@ -453,6 +454,202 @@ bool TranslateInputFile(const char * cFile)
 	return true;
 }
 
+bool TranslateSourceFile(const char * cFile)
+{
+	sModelHeader ModelHeader;	// Model file header
+	sModelSeq * SeqTable;		// Sequences table
+	ulong SeqTableSz;			// Sequences table size
+	int SeqCount;				// Sequences count
+	FILE * ptrInFile;			// Input file
+	FILE * ptrOutFile;			// Output file
+	char cOutFileName[256];		// Output file name
+
+	cSourceList srcList;		// List to store references
+	char LineBuf[256];			// Text line buffer
+
+	char Dir1[256] = ".\\";
+	char Dir2[256] = ".\\";
+	short MapIndex = -1;
+	short ModelIndex = -1;
+	char cSeqBuf[256] = "";
+	char cSeqNumBuf[256] = "";
+
+	// Init list
+	srcList.Init();
+
+	// Open input file
+	SafeFileOpen(&ptrInFile, cFile, "r");
+	fseek(ptrInFile, 0, SEEK_SET);
+
+	// Parse file
+	while (!feof(ptrInFile))
+	{
+		// Read line
+		fgets(LineBuf, sizeof(LineBuf), ptrInFile);
+		AddTerminator(LineBuf, '\n');
+
+		// Check line
+		if (LineBuf[0] == KEY_COMMENT || LineBuf[0] == '\0')
+			continue;
+		else if (!strcmp(LineBuf, KWD_SEQ))
+		{
+			// Sequence
+			if (ModelIndex == -1)
+			{
+				puts("Error: sequence before model");
+				continue;
+			}
+			if (MapIndex == -1)
+			{
+				puts("Error: sequence before map");
+				continue;
+			}
+
+			fgets(LineBuf, sizeof(LineBuf), ptrInFile);
+			AddTerminator(LineBuf, '\n');
+			if (LineBuf[0] != '\0')
+			{
+				int Submodel = srcList.FindSequence(ModelIndex, LineBuf);
+				if (Submodel == -1)
+				{
+					puts("Error adding sequence");
+					continue;
+				}
+				if (Submodel)
+					srcList.SetSubmodel(ModelIndex, srcList.List[MapIndex], Submodel);
+			}
+		}
+		else if (!strcmp(LineBuf, KWD_INDEX))
+		{
+			// Submodel index
+			if (ModelIndex == -1)
+			{
+				puts("Error: submodel before model");
+				continue;
+			}
+			if (MapIndex == -1)
+			{
+				puts("Error: submodel before map");
+				continue;
+			}
+
+			fgets(LineBuf, sizeof(LineBuf), ptrInFile);
+			AddTerminator(LineBuf, '\n');
+			if (LineBuf[0] != '\0')
+			{
+				int Submodel = atoi(LineBuf);
+				if (Submodel)
+					srcList.SetSubmodel(ModelIndex, srcList.List[MapIndex], Submodel);
+			}
+		}
+		else if (!strcmp(LineBuf, KWD_MODEL))
+		{
+			// Model
+			if (MapIndex == -1)
+			{
+				puts("Error: model before map");
+				continue;
+			}
+
+			fgets(LineBuf, sizeof(LineBuf), ptrInFile);
+			AddTerminator(LineBuf, '\n');
+			if (LineBuf[0] != '\0')
+			{
+				ModelIndex = srcList.FindOrAdd(LineBuf, false, Dir1, Dir2);
+				if (ModelIndex == -1)
+					puts("Error adding model");
+				else
+					if (srcList.Types[ModelIndex] == NOTEXTURES_MODEL)
+						srcList.SetSubmodel(ModelIndex, srcList.List[MapIndex], 0);	// Mark texture submodel
+			}
+		}
+		else if (!strcmp(LineBuf, KWD_MAP))
+		{
+			fgets(LineBuf, sizeof(LineBuf), ptrInFile);
+			AddTerminator(LineBuf, '\n');
+			if (LineBuf[0] != '\0')
+			{
+				MapIndex = srcList.FindOrAdd(LineBuf, true, Dir1, Dir2);
+				if (MapIndex == -1)
+					puts("Error adding map");
+			}
+		}
+		else if (!strcmp(LineBuf, KWD_DIR))
+		{
+			fgets(Dir1, sizeof(Dir1), ptrInFile);
+			AddTerminator(Dir1, '\n');
+			strcat(Dir1, "\\");
+		}
+		else if (!strcmp(LineBuf, KWD_DIR2))
+		{
+			fgets(Dir2, sizeof(Dir2), ptrInFile);
+			AddTerminator(Dir2, '\n');
+			strcat(Dir2, "\\");
+		}
+	}
+
+	// Close input file
+	fclose(ptrInFile);
+
+	// Open output file
+	FileGetFullName(cFile, cOutFileName, sizeof(cOutFileName));
+	strcat(cOutFileName, ".txt");
+	SafeFileOpen(&ptrOutFile, cOutFileName, "w");
+
+	// Write output file
+	for (short map = 0; map < srcList.ListSz; map++)
+	{
+		// Skip models
+		if (srcList.IsMap[map] == false)
+			continue;
+
+		// Write map entry
+		fprintf(ptrOutFile, "%s\n{\n", srcList.List[map]);
+
+		// Write models
+		for (short mdl = 0; mdl < srcList.ListSz; mdl++)
+		{
+			// Skip maps
+			if (srcList.IsMap[mdl] == true)
+				continue;
+
+			if (srcList.Submodels[mdl][map] != 0)
+			{
+				// Write main model and indexes
+				if ((srcList.Submodels[mdl][map] & (~1)))
+				{
+					FileGetFullName(srcList.List[mdl], cSeqBuf, sizeof(cSeqBuf));
+					strcat(cSeqBuf, ".dol[");
+					srcList.SequncesToStr(mdl, map, cSeqNumBuf);
+					strcat(cSeqBuf, cSeqNumBuf);
+					strcat(cSeqBuf, "]");
+					fprintf(ptrOutFile, "%s\n", cSeqBuf);
+				}
+
+				// Include textures if model is textureless
+				if ( (srcList.Submodels[mdl][map] & 1) )
+				{
+					FileGetFullName(srcList.List[mdl], cSeqBuf, sizeof(cSeqBuf));
+					strcat(cSeqBuf, "t.dol[]");
+					fprintf(ptrOutFile, "%s\n", cSeqBuf);
+				}
+			}
+		}
+
+		// Close map entry
+		fprintf(ptrOutFile, "}\n\n", srcList.List[map]);
+	}
+
+	// Close output file
+	fclose(ptrOutFile);
+
+	// Free memory
+	srcList.Clear();
+
+	puts("Done!\n\n");
+	return true;
+}
+
 int main(int argc, char * argv[])
 {
 	char cExtension[5];
@@ -490,6 +687,13 @@ int main(int argc, char * argv[])
 			{
 				puts("Validation failed! \n");
 			}
+		}
+		if (!strcmp(cExtension, ".inf") == true)
+		{
+			if (TranslateSourceFile(argv[1]) == true)
+				puts("Done! \n");
+			else
+				puts("Translation error! \n");
 		}
 		else												// Unsupported file
 		{

@@ -1,10 +1,10 @@
 @echo off
 
-echo Converting all *.spr sprites in current folder ...
+echo Converting all *.spz sprites in current folder ...
 
 echo __________________________________________________
 
-for %%I in (*.spr) do sprtool.exe hq %%I
+for %%I in (*.spz) do sprtool.exe lin %%I
 
 echo __________________________________________________
 

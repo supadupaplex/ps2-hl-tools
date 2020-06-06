@@ -1,9 +1,9 @@
 PS2 HL sprite tool
-Developed by Alexey Leusin, Novosibirsk, 2017
+Developed by Alexey Leusin, Novosibirsk, 2017-2019
 
 This tool is intended to convert PS2 Half-Life *.SPZ sprites to PC's *.SPR and vice versa.
 
-PS2 HL *.SPZ sprites can have frames with fixed dimensions: 16 (min), 32, 64, 128, 256, ... .
+PS2 HL *.SPZ sprites can have frames with fixed dimensions: 8 (min), 16, 32, 64, 128, 256, ... .
 Game graphics may be corrupted during playback of sprites with inappropriate dimensions.
 Frames with inappropriate sizes would be automatically resized during conversion to *.SPZ format.
 
@@ -16,16 +16,16 @@ Because *.SPZ sprites lack some parameters that present in *.SPR, so these param
 
 How to use:
 1) Windows explorer - drag and drop sprite file on sprtool.exe
-2) Command line\Batch - sprtool (option) [file_name]
-Options:
-	- noresize	- do not resize sprites during SPZ to SPR conversion
-	- hq		- SPR to SPZ conversion with higher resolution (experimental, tanks RAM)
+2) Command line\Batch - sprtool (noresize/lin) [file_name]
+
+Changelog:
+v1.3 - experimental linear resize
 
 And finally, some formal stuff:
 =====================================================================
 LICENSE
 =====================================================================
-Copyright (c) 2017, Alexey Leushin
+Copyright (c) 2017-2019, Alexey Leushin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or

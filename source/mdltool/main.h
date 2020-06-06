@@ -49,7 +49,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <windows.h>	// CreateDitectoryA()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.11"
+#define PROG_VERSION "1.15"
 #define DOL_TEXTURE_HEADER_SIZE 0x20
 #define BMP_TEXTURE_HEADER_SIZE 0x35
 #define MDL_TEXTURE_HEADER_SIZE 0x00
@@ -91,7 +91,9 @@ struct sModelHeader
 	ulong Version;				// 0xA - GoldSrc model
 	char Name[64];				// Internal model name
 	ulong FileSize;				// Model file size
-	char SomeData1[96];			// Data that is not important for conversion
+	char SomeData1[88];			// Data that is not important for conversion
+	ulong SeqCount;				// How many sequences
+	ulong SeqTableOffset;		// Location of sequence table 
 	ulong SubmodelCount;		// How many submodels
 	ulong SubmodelTableOffset;	// Location of submodel table 
 	ulong TextureCount;			// How many textures
@@ -141,6 +143,17 @@ struct sModelHeader
 		strcpy(this->Name, NewName);
 	}
 };
+
+// MDL/DOL sequence descriptor
+#pragma pack(1)					// No padding/spacers
+struct sModelSeq
+{
+	char Name[32];			// Sequence name
+	char SomeData1[124];
+	int Num;				// Sequence file number
+	char SomeData2[16];
+};
+
 
 // Extra section of DOL model headers
 #pragma pack(1)					// Eliminate unwanted 0x00 bytes

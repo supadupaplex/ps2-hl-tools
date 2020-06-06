@@ -13,8 +13,11 @@ How to use:
 1) Windows explorer - drag and drop model file on mdltool.exe
 2) Command line\Batch:
 		mdltool [filename]
-	Optional feature - extract textures from model:
-		mdltool extract [filename]
+	Optional features:
+		- extract textures from model:
+			mdltool extract [filename]
+		- report sequences:
+			mdltool seqrep [filename]
 
 Note, that PS2 Half-life models should have textures with power of 2 dimensions:
 8 (min), 16, 32, 64, 128, 256, ... . Otherwise either game crashes or graphics become corrupted.

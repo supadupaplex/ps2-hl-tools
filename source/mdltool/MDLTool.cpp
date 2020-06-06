@@ -58,7 +58,7 @@ void PatchSubmodelRef(sModelHeader * MdlHdr, char * ModelData, ulong ModelDataSi
 int CheckModel(const char * FileName);																				// Check model type
 void PatchDOLExtraSection(char * ModelData, ulong ModelDataSize, ulong LODDataOffseet, uchar MaxBodyParts, uchar NumBodyGroups, ulong FadeStart, ulong FadeEnd);
 		// Write extra data to DOL model file (this is needed to allow correct body part part switching and to stop crashing on PS2).
-
+void SeqReport(const char * FileName);																				// Sequence report
 
 
 // Write extra data to DOL model file (this is needed to allow correct body part switching and to stop crashing on PS2)
@@ -1360,12 +1360,71 @@ void ExtractMDLTextures(const char * FileName)	// Extract textures from PC model
 	puts("Done!\n\n");
 }
 
+void SeqReport(const char * FileName)
+{
+	sModelHeader ModelHeader;	// Model file header
+	sModelSeq * SeqTable;		// Sequences table
+	ulong SeqTableSz;			// Sequences table size
+	int SeqCount;				// Sequences count
+	FILE * ptrInFile;
+	FILE * ptrOutFile;
+	char cOutFileName[255];
+
+	// Open input file
+	SafeFileOpen(&ptrInFile, FileName, "rb");
+
+	// Load model header
+	ModelHeader.UpdateFromFile(&ptrInFile);
+
+	// Check model
+	if (ModelHeader.CheckModel() == NORMAL_MODEL)
+	{
+		printf("Internal name: %s \nSequences: %i \n", ModelHeader.Name, ModelHeader.SeqCount);
+	}
+	else
+	{
+		puts("Bad model file");
+		return;
+	}
+
+	// Allocate memory for sequence table
+	SeqCount = ModelHeader.SeqCount;
+	SeqTableSz = sizeof(sModelSeq) * SeqCount;
+	SeqTable = (sModelSeq *) malloc(SeqTableSz);
+
+	// Read qequence table
+	FileReadBlock(&ptrInFile, SeqTable, ModelHeader.SeqTableOffset, SeqTableSz);
+
+	// Close input file
+	fclose(ptrInFile);
+
+	// Open output file
+	FileGetFullName(FileName, cOutFileName, sizeof(cOutFileName));
+	strcat(cOutFileName, "_seq.txt");
+	SafeFileOpen(&ptrOutFile, cOutFileName, "w");
+
+	// Print report
+	fprintf(ptrOutFile, "File: %s\nSequences: %d\n\n", FileName, SeqCount);
+	fprintf(ptrOutFile, "[#]\t[File]\t[Sequence]\n", FileName, SeqCount);
+	for (int sq = 0; sq < SeqCount; sq++)
+		fprintf(ptrOutFile, "%d\t%d\t%s\n", sq, SeqTable[sq].Num, SeqTable[sq].Name);
+
+	// Close output file
+	fclose(ptrOutFile);
+
+	// Free memory
+	free(SeqTable);
+
+	puts("Done!\n\n");
+}
+
 int main(int argc, char * argv[])
 {
 	FILE * ptrInputFile;
 	FILE * ptrConfigFile;
 	char ConfigFilePath[255];
 	char Line[80];
+	char cFileExtension[5];
 
 	// Output info
 	printf("\nPS2 HL model tool v%s \n", PROG_VERSION);
@@ -1375,15 +1434,13 @@ int main(int argc, char * argv[])
 	{
 		// No arguments - show help screen
 		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop model file on mdltool.exe \n2) Command line/Batch - mdltool [model_file_name] \nOptional feature: extract textures - mdltool extract [model_file_name]  \n\nFor more info read ReadMe.txt \n");
+		puts("How to use: \n1) Windows explorer - drag and drop model file on mdltool.exe \n2) Command line/Batch - mdltool [model_file_name] \nOptional features:\n - extract textures: mdltool extract [filename]\n - report sequences: mdltool seqrep [filename]  \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
 
 		_getch();
 	}
 	else if (argc == 2)		// Convert model
 	{
-		char cFileExtension[5];
-
 		FileGetExtension(argv[1], cFileExtension, 5);
 
 		printf("\nProcessing file: %s\n", argv[1]);
@@ -1435,8 +1492,6 @@ int main(int argc, char * argv[])
 	}
 	else if (argc == 3 && !strcmp(argv[1], "extract") == true)		// Extract textures from model
 	{
-		char cFileExtension[5];
-
 		FileGetExtension(argv[2], cFileExtension, 5);
 
 		printf("\nProcessing file: %s\n", argv[2]);
@@ -1459,6 +1514,17 @@ int main(int argc, char * argv[])
 		{
 			puts("Wrong file extension.");
 		}
+	}
+	else if (argc == 3 && !strcmp(argv[1], "seqrep") == true)		// Report sequences
+	{
+		FileGetExtension(argv[2], cFileExtension, 5);
+
+		printf("\nProcessing file: %s\n", argv[2]);
+
+		if (!strcmp(".mdl", cFileExtension) || !strcmp(".dol", cFileExtension))
+			SeqReport(argv[2]);
+		else
+			puts("Wrong file extension.");
 	}
 	else
 	{

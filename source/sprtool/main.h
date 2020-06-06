@@ -47,11 +47,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <ctype.h>	// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.3"
+#define PROG_VERSION "1.32"
 #define EIGHT_BIT_PALETTE_ELEMENTS_COUNT 256
 #define SPZ_PALETTE_ELEMENT_SIZE 4
 #define SPR_PALETTE_ELEMENT_SIZE 3
-#define PSI_MIN_DIMENSION 16
+#define PSI_MIN_DIMENSION 8
 
 ////////// Typedefs //////////
 #include "types.h"
@@ -236,6 +236,63 @@ struct sSPZFrameHeader
 	{
 		// Copy texture header directly to this structure
 		FileReadBlock(ptrFile, this, Address, sizeof(sSPZFrameHeader));
+	}
+};
+
+// RGBA Texel
+#pragma pack(1)
+struct sRGBAPixel
+{
+	uchar R;
+	uchar G;
+	uchar B;
+	uchar A;
+
+	void Clear()
+	{
+		memset(this, 0x00, sizeof(this));
+	}
+
+	void UpdateFromImage(void * Start, char PixelSize, uchar PixelNum)
+	{
+		// Clear
+		this->Clear();
+
+		// Check pixel size
+		if (PixelSize != 3 && PixelSize != 4)
+			return;
+
+		// Calculate offset
+		uchar * Offset = (uchar *)Start + PixelSize * PixelNum;
+
+		// Get data
+		memcpy(this, Offset, PixelSize);
+	}
+
+	short FindDelta(sRGBAPixel * CompareTo)
+	{
+		// Pixels that we would compare
+		uchar * Pixel1 = (uchar *)this;
+		uchar * Pixel2 = (uchar *)CompareTo;
+
+		//// Find maximum delta between all channels
+		short MaxDelta = 0;
+		for (char i = 0; i < sizeof(sRGBAPixel); i++)
+		{
+			short Current = Pixel1[i] > Pixel2[i] ? Pixel1[i] - Pixel2[i] : Pixel2[i] - Pixel1[i];
+			if (MaxDelta < Current)
+				MaxDelta = Current;
+		}
+		//float MaxDelta = 0;
+		//for (char i = 0; i < sizeof(sRGBAPixel); i++)
+		//{
+		//	float Diff = (float) Pixel1[i] - (float) Pixel2[i];
+		//	MaxDelta += Diff*Diff;
+		//}
+		//MaxDelta = sqrtf(MaxDelta);
+
+		// Return result
+		return MaxDelta;
 	}
 };
 
@@ -499,7 +556,7 @@ struct sTexture
 		}
 	}
 
-	void ScaleResize(ulong NewWidth, ulong NewHeight)			// Resize bitmap.
+	void NearestResize(ulong NewWidth, ulong NewHeight)			// Resize bitmap.
 	{
 		uchar * NewBitmap;
 
@@ -685,4 +742,258 @@ struct sTexture
 		this->Bitmap = NewBitmap;
 	}
 	*/
+	
+	////////////////////////////////////////
+	// LINEAR (6)
+	////////////////////////////////////////
+	
+	uchar FindClosestColor(sRGBAPixel * TargetColor)
+	{
+		// Ignore uninitialized palette
+		if (Palette == NULL)
+			return 0;
+
+		// Get pixel size
+		char ElementSize = PaletteSize / EIGHT_BIT_PALETTE_ELEMENTS_COUNT;
+		if (ElementSize != 3 && ElementSize != 4)
+		{
+			puts("Unknown color format");
+			return 0;
+		}
+
+		// Erase alpha if not RGBA
+		if (ElementSize == 3)
+			TargetColor->A = 0;
+		
+		// Find index with minimal color delta: 0 - full match, 254 - lowest match
+		uchar Index = 0xFF;		// Default index for no color match situation
+		short MinDelta = 0x7FFF;
+		// Process palette
+		sRGBAPixel CurrentColor = {0, 0, 0, 0};
+		short CurrentDelta;
+		for (uint e = 0; e < EIGHT_BIT_PALETTE_ELEMENTS_COUNT; e++)
+		{
+			// Get color from the next palette entry
+			memcpy(&CurrentColor, &Palette[ElementSize * e], ElementSize);
+
+			// Erase alpha if not RGBA
+			//if (ElementSize == 3)
+			//	CurrentColor.A = 0;
+
+			// Compare target and current colors
+			CurrentDelta = CurrentColor.FindDelta(TargetColor);
+			if (CurrentDelta < MinDelta)
+			{
+				MinDelta = CurrentDelta;
+				Index = e;
+				
+				// Stop if full match found
+				if (CurrentDelta == 0)
+					break;
+			}
+		}
+		
+		// Return result
+		return Index;
+	}
+
+	void LinearResize(short NewWidth, short NewHeight)			// Smooth linear resize
+	{
+		ulong * NewRGBABitmap;
+
+		if (NewWidth = Width && NewHeight == Height)
+			return;
+
+		// Allocate memory for new RGBA bitmap
+		NewRGBABitmap = (ulong *)malloc(NewWidth * NewHeight * 4);
+		if (NewRGBABitmap == NULL)
+		{
+			puts("Unable to allocate memory!");
+			_getch();
+			exit(EXIT_FAILURE);
+		}
+
+		// Convet to RGBA and resize
+		//puts("Converting to RGBA and resizing ...");
+		for (int NewY = 0; NewY < NewHeight; NewY++)
+			for (int NewX = 0; NewX < NewWidth; NewX++)
+			{
+				float OldY = (float)NewY / (NewHeight - 1) * (this->Height - 1);
+				float OldX = (float)NewX / (NewWidth - 1) * (this->Width - 1);
+				
+				sRGBAPixel Pixel;
+				GetResizedPixel(OldX, OldY, NewWidth, NewHeight, &Pixel);
+
+				memcpy(&NewRGBABitmap[(NewWidth * NewY) + NewX], &Pixel, sizeof(Pixel));
+			}
+
+		// Reallocate indexed bitmap and update size
+		free(Bitmap);
+		Bitmap = (uchar *)malloc(NewWidth * NewHeight);
+		if (!Bitmap)
+			exit(EXIT_FAILURE);
+		this->Width = NewWidth;
+		this->Height = NewHeight;
+		this->BitmapSize = this->Width * this->Height;
+
+		// Convert to indexed
+		//puts("Converting back to 8-bit indexed format ...");
+
+		// Reindex with existing palette //
+		for (uint Y = 0; Y < Height; Y++)
+		{
+			ulong LineOffset = Y * Width;
+
+			for (uint X = 0; X < Width; X++)
+			{
+				// Convert RGBA pixel to index
+				sRGBAPixel Px;
+				memcpy(&Px, &NewRGBABitmap[LineOffset + X], sizeof(Px));
+				uchar Index = FindClosestColor(&Px);
+
+				// Write index to bitmap
+				Bitmap[LineOffset + X] = Index;
+			}
+		}
+
+		// Free memory
+		free(NewRGBABitmap);
+
+		// Result is achieved - exit function
+		return;
+	}
+
+	void GetResizedPixel(float PixX, float PixY, short NewWidth, short NewHeight, sRGBAPixel * Result)
+	{
+		// Find factors
+		float FX = (float)Width  / (float)NewWidth;
+		float FY = (float)Height / (float)NewHeight;
+
+		if (FX <= 1.0 && FY <= 1.0)
+		{
+			// Outut image is bigger - one sample is enough
+			FetchTexelSmooth(PixX, PixY, Result);
+		}
+		else
+		{
+			// Lowering size - multiple samples needed
+			
+			// Calculate samples
+			int SamX = ceilf(FX);
+			int SamY = ceilf(FY);
+			//SamX = SamX % 2 == 0 ? SamX + 1 : SamX;
+			//SamY = SamY % 2 == 0 ? SamY + 1 : SamY;
+
+			// Calculate step
+			float StepX = FX / (float)SamX;// (FX - 1.0) / (float)SamX;
+			float StepY = FY / (float)SamY;// (FY - 1.0) / (float)SamY;
+
+			// Accumulate samples
+			long R = 0, G = 0, B = 0, A = 0;
+			float CurrentX = PixX;// +0.5;
+			float CurrentY = PixY;// +0.5;
+			sRGBAPixel Current;
+			for (short Y = 0; Y < SamY; Y++)
+			{
+				for (short X = 0; X < SamX; X++)
+				{
+					FetchTexelSmooth(CurrentX, CurrentY, &Current);
+					R += Current.R;
+					G += Current.G;
+					B += Current.B;
+					A += Current.A;
+
+					CurrentX += StepX;
+				}
+				CurrentY += StepY;
+				CurrentX = PixX;
+			}
+
+			// Normalize
+			long TotalSam = SamX * SamY;
+			R /= TotalSam;
+			G /= TotalSam;
+			B /= TotalSam;
+			A /= TotalSam;
+
+			// Return values
+			Result->R = R;
+			Result->G = G;
+			Result->B = B;
+			Result->A = A;
+		}
+	}
+
+	void FetchTexelSmooth(float PixX, float PixY, sRGBAPixel * Result)
+	{
+		float IntX, FrX, IntY, FrY;
+		char PixelSize;
+		sRGBAPixel Input[4], Temp[2];	// Input: 0 - upper left, 1 - upper right, 2 - bottom left, 3 - bottom right
+
+		// Check palette
+		switch (PaletteSize)
+		{
+		case 0x300:
+			PixelSize = 3;
+			break;
+		case 0x400:
+			PixelSize = 4;
+			break;
+		default:
+			return;
+		}
+
+		// Separate fractions from integer parts
+		FrX = modff(PixX, &IntX);
+		FrY = modff(PixY, &IntY);
+
+		// Fetch pixels
+		uchar Counter = 0;
+		for (short Y = 0; Y < 2; Y++)
+		{
+			for (short X = 0; X < 2; X++)
+			{
+				short ImgX = IntX + X;
+				short ImgY = IntY + Y;
+
+				if (ImgX >= Width)
+					ImgX = Width - 1;
+				else if (ImgX < 0)
+					ImgX = 0;
+
+				if (ImgY >= Height)
+					ImgY = Height - 1;
+				else if (ImgY < 0)
+					ImgY = 0;
+
+				ulong PixelNum = ImgY * Width + ImgX;
+				uchar ColorIndex = Bitmap[PixelNum];
+				Input[Counter].UpdateFromImage(Palette, PixelSize, ColorIndex);
+				Counter++;
+			}
+		}
+
+		// Horisontal adjustment
+		LinearFilter(&Input[0], &Input[1], FrX, &Temp[0]);
+		LinearFilter(&Input[2], &Input[3], FrX, &Temp[1]);
+
+		// Vertical adjustment
+		LinearFilter(&Temp[0], &Temp[1], FrY, Result);
+	}
+
+	void LinearFilter(sRGBAPixel * Begin, sRGBAPixel * End, float Distance, sRGBAPixel * Result)
+	{
+		// Check distance
+		if (Distance < 0)
+			Distance = 0;
+		if (Distance > 1.0)
+			Distance = 1.0;
+
+		// Get result
+		float InvDist = 1.0 - Distance;
+		Result->R = (float)Begin->R * InvDist + (float)End->R * Distance;
+		Result->G = (float)Begin->G * InvDist + (float)End->G * Distance;
+		Result->B = (float)Begin->B * InvDist + (float)End->B * Distance;
+		Result->A = (float)Begin->A * InvDist + (float)End->A * Distance;
+	}
 };

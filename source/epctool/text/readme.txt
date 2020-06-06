@@ -4,9 +4,11 @@ Developed by Alexey Leushin, Novosibirsk, 2018.
 This tool is intended to build PS2 Half-life *.epc precache files.
 If you see debug messages like "Loading sequence models\barney01.dol"
 then you can fix them with this tool and thus reduce stuttering.
+You can obtain animation sequence source file by playing converted mod
+in "YA PS2HL" with "sv_ps2_precache" and "sv_supadupaplex" cvars set to 1 or 2.
 
 How to use:
-1) Windows explorer - drag and drop *.txt file on epctool.exe
+1) Windows explorer - drag and drop *.txt file (list) or *.inf file (source) on epctool.exe
 2) Command line\Batch - epctool.exe [file_name]
 
 Formatting:

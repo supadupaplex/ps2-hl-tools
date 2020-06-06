@@ -38,11 +38,11 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "main.h"
 
 ////////// Functions //////////
-void ConvertSPZToSPR(const char * cFile, bool Resize);
-void ConvertSPRToSPZ(const char * cFile, bool HQResize);
-uint PSIProperSize(uint Size, bool HQ);
+void ConvertSPZToSPR(const char * cFile, bool Resize, bool Linear);
+void ConvertSPRToSPZ(const char * cFile, bool Linear);
+uint PSIProperSize(uint Size);
 
-void ConvertSPZToSPR(const char * cFile, bool Resize)
+void ConvertSPZToSPR(const char * cFile, bool Resize, bool Linear)
 {
 	FILE * ptrSPZ;
 	FILE * ptrSPR;
@@ -108,7 +108,13 @@ void ConvertSPZToSPR(const char * cFile, bool Resize)
 
 		// Resize frame to it's original size (if specified)
 		if (Resize == true)
-			Textures[i].ScaleResize(SPZFrameHeaders[i].UpWidth, SPZFrameHeaders[i].UpHeight);
+		{
+			Textures[i].PaletteReformat(SPZ_PALETTE_ELEMENT_SIZE);	// Linear resize requires proper palette
+			if (Linear)
+				Textures[i].LinearResize(SPZFrameHeaders[i].UpWidth, SPZFrameHeaders[i].UpHeight);
+			else
+				Textures[i].NearestResize(SPZFrameHeaders[i].UpWidth, SPZFrameHeaders[i].UpHeight);
+		}
 
 		// Find maximum frame sizes
 		if (Textures[i].Width > MaxWidth)
@@ -175,7 +181,7 @@ void ConvertSPZToSPR(const char * cFile, bool Resize)
 	for (int i = 0; i < SPZHeader.FrameCount; i++)
 	{
 		Textures[i].PaletteRemoveAlpha();
-		Textures[i].PaletteReformat(SPR_PALETTE_ELEMENT_SIZE);
+		//Textures[i].PaletteReformat(SPR_PALETTE_ELEMENT_SIZE);	// Moved this line as it should be before the linear resize
 		Textures[i].PaletteMulDiv(true);
 		if (SPRFormat == SPR_INDEXALPHA)
 			Textures[i].PalettePatchIAColors(SPR_PALETTE_ELEMENT_SIZE, true);
@@ -207,7 +213,7 @@ void ConvertSPZToSPR(const char * cFile, bool Resize)
 	fclose(ptrSPR);
 }
 
-void ConvertSPRToSPZ(const char * cFile, bool HQResize)
+void ConvertSPRToSPZ(const char * cFile, bool Linear)
 {
 	FILE * ptrSPZ;
 	FILE * ptrSPR;
@@ -258,7 +264,7 @@ void ConvertSPRToSPZ(const char * cFile, bool HQResize)
 	uint PaletteOffset;
 	uint PaletteSize;
 	uint FrameOffset = sizeof(sSPRHeader) + EIGHT_BIT_PALETTE_ELEMENTS_COUNT * SPR_PALETTE_ELEMENT_SIZE;
-	char Temp[13];
+	char ShortName[13];
 	char TextureName[16];
 	char FileName[64];
 	FileGetName(cFile, FileName, sizeof(FileName), false);
@@ -271,8 +277,8 @@ void ConvertSPRToSPZ(const char * cFile, bool HQResize)
 		PaletteSize = EIGHT_BIT_PALETTE_ELEMENTS_COUNT * SPR_PALETTE_ELEMENT_SIZE;
 
 		Textures[i].Initialize();
-		snprintf(Temp, sizeof(Temp), "%s", FileName);
-		snprintf(TextureName, sizeof(TextureName), "%s%03i", Temp, i + 1);
+		snprintf(ShortName, sizeof(ShortName), "%s", FileName); // snprintf is used to cut big names
+		snprintf(TextureName, sizeof(TextureName), "%s%03i", ShortName, i + 1);
 		Textures[i].UpdateFromFile(&ptrSPR, BitmapOffset, BitmapSize, PaletteOffset, PaletteSize, TextureName, SPRFrameHeaders[i].Width, SPRFrameHeaders[i].Height);
 
 		// Calculate offset for next frame
@@ -358,7 +364,7 @@ void ConvertSPRToSPZ(const char * cFile, bool HQResize)
 		FileWriteBlock(&ptrSPZ, &SPZFrameTableEntry, sizeof(sSPZFrameTableEntry));
 
 		// Calculate offset for next frame (with resizing in mind)
-		FrameOffset += sizeof(sSPZFrameHeader) + EIGHT_BIT_PALETTE_ELEMENTS_COUNT * SPZ_PALETTE_ELEMENT_SIZE + PSIProperSize(Textures[i].Width, HQResize) * PSIProperSize(Textures[i].Height, HQResize);
+		FrameOffset += sizeof(sSPZFrameHeader) + EIGHT_BIT_PALETTE_ELEMENTS_COUNT * SPZ_PALETTE_ELEMENT_SIZE + PSIProperSize(Textures[i].Width) * PSIProperSize(Textures[i].Height);
 	}
 
 	// Add 8 blank bytes if table has even number of elements (PS2 version likes everything to be alligned within 16-byte sized sectors)
@@ -374,7 +380,10 @@ void ConvertSPRToSPZ(const char * cFile, bool HQResize)
 		// Resize frame to approriate for PS2 HL size
 		OriginalWidth = Textures[i].Width;
 		OriginalHeight = Textures[i].Height;
-		Textures[i].ScaleResize(PSIProperSize(OriginalWidth, HQResize), PSIProperSize(OriginalHeight, HQResize));
+		if (Linear)
+			Textures[i].LinearResize(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
+		else
+			Textures[i].NearestResize(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
 
 		// Write header
 		SPZFrameHeader.Update(Textures[i].Name, Textures[i].Width, Textures[i].Height);
@@ -397,7 +406,7 @@ void ConvertSPRToSPZ(const char * cFile, bool HQResize)
 	fclose(ptrSPZ);
 }
 
-uint PSIProperSize(uint Size, bool HQ)	// Function returns closest proper dimension. PS2 HL proper PSI dimensions: 16 (min), 32, 64, 128, 256, 512, ...
+uint PSIProperSize(uint Size)	// Function returns closest proper dimension. PS2 HL proper PSI dimensions: 16 (min), 32, 64, 128, 256, 512, ...
 {
 	uint CurrentSize;
 
@@ -413,7 +422,7 @@ uint PSIProperSize(uint Size, bool HQ)	// Function returns closest proper dimens
 	}
 	else
 	{
-		if (Size > (CurrentSize / 2 + CurrentSize / 4) || HQ == true)
+		if (Size > (CurrentSize / 2 + CurrentSize / 4))
 			return CurrentSize;
 		else
 			return CurrentSize / 2;
@@ -426,8 +435,8 @@ int main(int argc, char * argv[])
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017, Alexey Leushin. All rights reserved.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop sprite file on sprtool.exe \n2) Command line\\Batch - sprtool (noresize) [file_name] \n\nFor more info read ReadMe.txt \n");
+		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2019, Alexey Leushin. All rights reserved.\n");
+		puts("How to use: \n1) Windows explorer - drag and drop sprite file on sprtool.exe \n2) Command line\\Batch - sprtool (noresize/lin) [file_name] \n\nFor more info read ReadMe.txt \n");
 		puts("Press any key to exit ...");
 		_getch();
 	}
@@ -446,7 +455,7 @@ int main(int argc, char * argv[])
 		else if (!strcmp(Extension, ".spz") == true)
 		{
 			printf("Proccessing file: %s \n", argv[1]);
-			ConvertSPZToSPR(argv[1], true);
+			ConvertSPZToSPR(argv[1], true, false);
 			puts("Done! \n");
 			return 0;
 		}
@@ -461,23 +470,47 @@ int main(int argc, char * argv[])
 		char Extension[5];
 		FileGetExtension(argv[2], Extension, sizeof(Extension));
 
-		if (!strcmp(argv[1], "noresize") == true && !strcmp(Extension, ".spz") == true)
+		if (!strcmp(argv[1], "noresize") == true)
 		{
-			printf("Proccessing file: %s \n", argv[2]);
-			ConvertSPZToSPR(argv[2], false);
-			puts("Done! \n");
-			return 0;
+			if (!strcmp(Extension, ".spz") == true)
+			{
+				printf("Proccessing file: %s \n", argv[2]);
+				puts("No resize mode ...");
+				ConvertSPZToSPR(argv[2], false, false);
+				puts("Done! \n");
+				return 0;
+			}
+			else
+			{
+				puts("Nope! \n");
+			}
 		}
-		else if (!strcmp(argv[1], "hq") == true && !strcmp(Extension, ".spr") == true)
+		else if (!strcmp(argv[1], "lin"))
 		{
-			printf("Proccessing file: %s \n", argv[2]);
-			ConvertSPRToSPZ(argv[2], true);
-			puts("Done! \n");
-			return 0;
+			if (!strcmp(Extension, ".spz") == true)
+			{
+				printf("Proccessing file: %s \n", argv[2]);
+				puts("Linear resize mode ...");
+				ConvertSPZToSPR(argv[2], true, true);
+				puts("Done! \n");
+				return 0;
+			}
+			if (!strcmp(Extension, ".spr") == true)
+			{
+				printf("Proccessing file: %s \n", argv[2]);
+				puts("Linear resize mode ...");
+				ConvertSPRToSPZ(argv[2], true);
+				puts("Done! \n");
+				return 0;
+			}
+			else
+			{
+				puts("Nope! \n");
+			}
 		}
 		else
 		{
-			puts("Nope! \n");
+			puts("Bad arguments! \n");
 		}
 	}
 	else
