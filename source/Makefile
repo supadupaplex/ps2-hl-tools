@@ -44,11 +44,11 @@ release: clean-all all
 
 # tools
 %tool: cpu-chk zlib-build
-	cd $@ && "$(MAKE)"
+	"$(MAKE)" -fMakefile.tool NAME=$@
 	mv $@/bin $(BLDDIR)/$@
 
 %tool-clean:
-	cd $(firstword $(subst -, ,$@)) && "$(MAKE)" clean
+	"$(MAKE)" -fMakefile.tool clean NAME=$(firstword $(subst -, ,$@))
 	rm -rf $(BLDDIR)/$(firstword $(subst -, ,$@))
 
 # can work on x86 only
@@ -68,10 +68,10 @@ zlib-build: dirs
 	cd $(ZLIB_DIR)	&& tar -xzf zlib-$(ZLIB_VER).tar.gz
 ifeq ($(OS),Windows_NT)
 	# windows
-	cd $(ZLIB_WDIR)	&& CFLAGS=-m32 "$(MAKE)" -fwin32/Makefile.gcc
+	cd $(ZLIB_WDIR)	&& "$(MAKE)" -fwin32/Makefile.gcc CFLAGS='-m32 -O3 -Wall'
 else
 	# other os
-	cd $(ZLIB_WDIR)	&& CFLAGS=-m32 ./configure && "$(MAKE)"
+	cd $(ZLIB_WDIR)	&& CFLAGS='-m32 -O3 -Wall' ./configure && "$(MAKE)"
 endif
 	cp $(ZLIB_WDIR)/libz.a	$(COMOBJ)/
 	cp $(ZLIB_WDIR)/zlib.h	$(COMDIR)/
