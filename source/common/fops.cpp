@@ -78,7 +78,11 @@ void FileGetName(const char * Path, char * OutputBuffer, int OutputBufferSize, b
 
 	for (int i = End; i >= 0; i--)
 	{
+#ifdef _WIN32
+		if (Path[i] == DIR_DELIM_CH || Path[i] == DIR_NOT_DELIM_CH) // windows can understand both
+#else
 		if (Path[i] == DIR_DELIM_CH)
+#endif
 		{
 			Start = i;
 			break;
@@ -102,7 +106,11 @@ void FileGetFullName(const char * Path, char * OutputBuffer, int OutputBufferSiz
 
 	for (int i = End; i >= 0; i--)
 	{
+#ifdef _WIN32
+		if (Path[i] == DIR_DELIM_CH || Path[i] == DIR_NOT_DELIM_CH) // windows can understand both
+#else
 		if (Path[i] == DIR_DELIM_CH)
+#endif
 			break;
 
 		if (Path[i] == '.' && SearchExtension == true)
@@ -124,7 +132,11 @@ void FileGetPath(const char * Path, char * OutputBuffer, int OutputBufferSize)
 	
 	for (int i = 0; i < Len; i++)
 	{
+#ifdef _WIN32
+		if (Path[i] == DIR_DELIM_CH || Path[i] == DIR_NOT_DELIM_CH) // windows can understand both
+#else
 		if (Path[i] == DIR_DELIM_CH)
+#endif
 			End = i + 1;
 	}
 
@@ -306,8 +318,12 @@ void DirIterInit(const char * Dir)
 	// Store base dir (with deliminer at the end)
 	strcpy(GI.BaseDir, Dir);
 	int len = strlen(GI.BaseDir);
-	if (!len || (len && GI.BaseDir[len-1] != DIR_DELIM_CH))
-		strcat(GI.BaseDir, DIR_DELIM);
+	if (!len)
+		strcpy(GI.BaseDir, DIR_DELIM);		// empty
+	else if (GI.BaseDir[len-1] == DIR_NOT_DELIM_CH)
+		GI.BaseDir[len-1] = DIR_DELIM_CH;	// wrong delim
+	else if (GI.BaseDir[len-1] != DIR_DELIM_CH)
+		strcat(GI.BaseDir, DIR_DELIM);		// no delim
 
 	DPRINT("[iter]->(re)init, base: %s\n", GI.BaseDir);
 }
