@@ -800,7 +800,7 @@ struct sTexture
 	{
 		ulong * NewRGBABitmap;
 
-		if (NewWidth = Width && NewHeight == Height)
+		if (NewWidth == Width && NewHeight == Height)
 			return;
 
 		// Allocate memory for new RGBA bitmap
