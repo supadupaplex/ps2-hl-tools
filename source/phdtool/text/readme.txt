@@ -4,18 +4,13 @@ Zlib library is used within this program to perform DEFLATE\INFLATE operations.
 
 This tool is intended to convert PS2 Half-Life decals to PNG images and vice versa.
 
-v1.22 Initial support for BMP decals, PHD to BMP conversion is not 100% accurate.
-v1.25 Added alternative PHD to BMP conversion mode which is supposed to be more accurate (hacky).
+v1.22 Initial support for BMP decals
 
 How to use:
 1) Windows explorer - drag and drop decal file on phdtool.exe
 2) Command line\Batch - phdtool (option) [file_name]
 Options:
 	topng	- PHD to PNG conversion
-	tobmp	- PHD to BMP conversion
-	altbmp	- PHD to BMP conversion with palette tweak (closer to original PC decals)
-	hq	- BMP\PNG to PHD conversion with higher resolution (experimental, tanks RAM)
-		  and palette tweak
 
 
 And finally, some formal stuff:

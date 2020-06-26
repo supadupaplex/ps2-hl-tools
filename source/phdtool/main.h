@@ -46,9 +46,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.26"
+#define PROG_VERSION "1.27"
 
-#define PSI_MIN_DIMENSION 16
+#define PSI_MIN_DIMENSION 8
 #define EIGHT_BIT_PALETTE_ELEMENTS_COUNT 256
 
 // Image tyes
@@ -108,21 +108,21 @@ struct sPSIHeader
 {
 	char Name[16];		// Internal name
 	uchar Magic[3];		// Filled with zeroes in most cases
-	uchar LODCount;		// Number of LODs that present in image file (used in decals only)
+	uchar MIPCount;		// Number of MIPs that present in image file (used in decals only)
 	ulong Type;			// 2 - 8 bit indexed bitmap, 5 - 32 bit RGBA bitmap
 	ushort Width;		// Texture width (in pixels)
 	ushort Height;		// Textre Height (in pixels)
 	ushort UpWidth;		// Upscale target: width (in pixels)
 	ushort UpHeight;	// Upscale target: height (in pixels)
 
-	void Update(const char * NewName, ushort NewWidth, ushort NewHeight, ulong NewType, uchar NewLODCount)
+	void Update(const char * NewName, ushort NewWidth, ushort NewHeight, ulong NewType, uchar NewMIPCount)
 	{
 		// Clear this structure from garbage and leftovers
 		memset(this, 0x00, sizeof(sPSIHeader));
 
 		// Update fields
 		snprintf(this->Name, sizeof(Name), "%s", NewName);
-		this->LODCount = NewLODCount;
+		this->MIPCount = NewMIPCount;
 		this->Type = NewType;
 		this->Width = NewWidth;
 		this->Height = NewHeight;

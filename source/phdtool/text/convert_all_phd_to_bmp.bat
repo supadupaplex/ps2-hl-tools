@@ -4,7 +4,7 @@ echo Converting all PS2 Half-life Decals in current folder ...
 
 echo __________________________________________________
 
-for %%I in (*.) do phdtool.exe tobmp %%I
+for %%I in (*.) do phdtool.exe %%I
 
 echo __________________________________________________
 

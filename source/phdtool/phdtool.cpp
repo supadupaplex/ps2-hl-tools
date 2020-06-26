@@ -38,26 +38,21 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "util.h"
 #include "main.h"
 
-////////// Includes //////////
-bool PHDtoBMPAltMode = false;
-
 ////////// Functions //////////
-bool ConvertPNGtoPHD(const char * FileName, bool HQResize);
+bool ConvertPNGtoPHD(const char * FileName);
 bool ConvertPHDtoPNG(const char * FileName);
-uint PSIProperSize(uint Size, bool HQ);
+uint PSIProperSize(uint Size);
 void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHeight, uint NewWidth, uint NewHeight);
-uchar CreateLODs(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height);
+uchar CreateMIPs(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height);
 void PaletteFix(uchar * RGBAPalette, ulong RGBAPaletteSize, bool MulDiv);
-bool ConvertBMPtoPHD(const char * FileName, bool HQResize);
+bool ConvertBMPtoPHD(const char * FileName);
 bool ConvertPHDtoBMP(const char * FileName);
-void PaletteOverrideColors(uchar * RGBAPalette, ulong RGBAPaletteSize, uchar BackgroundIndex, uchar MaxIndex, bool ToBMP);
-uchar BitmapFetchBackgroud(uchar * RGBABitmap, ulong RGBABitmapSize, uint Width);
-uchar BitmapFetchMax(uchar * RGBABitmap, ulong RGBABitmapSize);
+void ConvertDecalPalette(uchar * RGBAPalette, ulong RGBAPaletteSize, bool ToBMP);
 void PaletteSwapRedAndGreen(uchar * RGBAPalette, ulong RGBAPaletteSize);
 void FlipBitmap(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height);
 
 
-bool ConvertPNGtoPHD(const char * FileName, bool HQResize)
+bool ConvertPNGtoPHD(const char * FileName)
 {
 	FILE *ptrInputF;						// Input file
 	FILE *ptrOutputF;						// Output file
@@ -65,7 +60,7 @@ bool ConvertPNGtoPHD(const char * FileName, bool HQResize)
 	sPNGHeader PNGHeader;
 	sPHDHeader PHDHeader;
 	sPSIHeader PSIHeader;
-	uchar LODCount;
+	uchar MIPCount;
 
 	sPNGData * PNGPalette;
 	sPNGData * PNGBitmap;
@@ -97,11 +92,11 @@ bool ConvertPNGtoPHD(const char * FileName, bool HQResize)
 		// Resize bitmap to proper size
 		uint OriginalWidth = PNGHeader.Width;
 		uint OriginalHeight = PNGHeader.Height;
-		PNGHeader.Update(PSIProperSize(OriginalWidth, HQResize), PSIProperSize(OriginalHeight, HQResize), PNG_INDEXED);
-		ScaleBitmap(&PNGBitmap->Data, &PNGBitmap->DataSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth, HQResize), PSIProperSize(OriginalHeight, HQResize));
+		PNGHeader.Update(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight), PNG_INDEXED);
+		ScaleBitmap(&PNGBitmap->Data, &PNGBitmap->DataSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
 
-		// Create LODs
-		LODCount = CreateLODs(&PNGBitmap->Data, &PNGBitmap->DataSize, PNGHeader.Width, PNGHeader.Height);
+		// Create MIPs
+		MIPCount = CreateMIPs(&PNGBitmap->Data, &PNGBitmap->DataSize, PNGHeader.Width, PNGHeader.Height);
 
 		// Create output file
 		FileGetFullName(FileName, OutFile, sizeof(OutFile));
@@ -113,7 +108,7 @@ bool ConvertPNGtoPHD(const char * FileName, bool HQResize)
 
 		// Write PSI header
 		FileGetName(FileName, TexName, sizeof(TexName), false);
-		PSIHeader.Update(TexName, PNGHeader.Width, PNGHeader.Height, PSI_INDEXED, LODCount);
+		PSIHeader.Update(TexName, PNGHeader.Width, PNGHeader.Height, PSI_INDEXED, MIPCount);
 		PSIHeader.UpdateUpscaleTaget(OriginalWidth, OriginalHeight);
 		FileWriteBlock(&ptrOutputF, &PSIHeader, sizeof(sPSIHeader));
 
@@ -246,7 +241,7 @@ bool ConvertPHDtoPNG(const char * FileName)
 	return true;
 }
 
-uint PSIProperSize(uint Size, bool HQ)	// Function returns closest proper dimension. PS2 HL proper PSI dimensions: 16 (min), 32, 64, 128, 256, 512, ...
+uint PSIProperSize(uint Size)	// Function returns closest proper dimension. PS2 HL proper PSI dimensions: 8 (min), 16, 32, 64, 128, 256, 512, ...
 {
 	uint CurrentSize;
 
@@ -262,7 +257,7 @@ uint PSIProperSize(uint Size, bool HQ)	// Function returns closest proper dimens
 	}
 	else
 	{
-		if (Size > (CurrentSize / 2 + CurrentSize / 4) || HQ == true)
+		if (Size > (CurrentSize / 2 + CurrentSize / 4))
 			return CurrentSize;
 		else
 			return CurrentSize / 2;
@@ -303,54 +298,54 @@ void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHei
 	*BitmapSize = NewWidth * NewHeight;
 }
 
-uchar CreateLODs(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height)			// Create LODs for decal. Function overrides old bitmap and returns LOD count.
+uchar CreateMIPs(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height)			// Create MIPs for decal. Function overrides old bitmap and returns MIP count.
 {
 	uint a;
 	uint b;
-	uchar LODCount;
-	ulong LODSize;
+	uchar MIPCount;
+	ulong MIPSize;
 	uchar * NewBitmap;
 	ulong NewBitmapSize;
 	uchar * OldBitmap = *Bitmap;
 
-	// Check how many LODs needed
+	// Check how many MIPs needed
 	a = Width;
 	b = Height;
-	LODCount = 0;
-	LODSize = 0;
-	while (a > 8 && b > 8)		// At least one side of smallest LOD should be less or equal 8
+	MIPCount = 0;
+	MIPSize = 0;
+	while (a > 8 && b > 8)		// At least one side of smallest MIP should be less or equal 8
 	{
 		a /= 2;
 		b /= 2;
-		LODSize += (a * b);
-		LODCount++;
+		MIPSize += (a * b);
+		MIPCount++;
 	}
 
 	// Allocate memory for new bitmap
-	NewBitmapSize = *BitmapSize + LODSize;
+	NewBitmapSize = *BitmapSize + MIPSize;
 	NewBitmap = (uchar *)malloc(NewBitmapSize);
 
-	// Actual LOD creation work
+	// Actual MIP creation work
 	ulong Offset = 0;
-	for (int CurrentLOD = 0; CurrentLOD <= LODCount; CurrentLOD++)
+	for (int CurrentMIP = 0; CurrentMIP <= MIPCount; CurrentMIP++)
 	{
-		uint LODWidth = Width >> CurrentLOD;
-		uint LODHeight = Height >> CurrentLOD;
+		uint MIPWidth = Width >> CurrentMIP;
+		uint MIPHeight = Height >> CurrentMIP;
 
-		// Create LOD
-		for (int NewY = 0; NewY < LODHeight; NewY++)
+		// Create MIP
+		for (int NewY = 0; NewY < MIPHeight; NewY++)
 		{
-			for (int NewX = 0; NewX < LODWidth; NewX++)
+			for (int NewX = 0; NewX < MIPWidth; NewX++)
 			{
-				int OldX = (int)round((double)NewX / (LODWidth - 1) * (Width - 1));
-				int OldY = (int)round((double)NewY / (LODHeight - 1) * (Height - 1));
+				int OldX = (int)round((double)NewX / (MIPWidth - 1) * (Width - 1));
+				int OldY = (int)round((double)NewY / (MIPHeight - 1) * (Height - 1));
 
-				NewBitmap[Offset + (LODWidth * NewY) + NewX] = OldBitmap[(Width * OldY) + OldX];
+				NewBitmap[Offset + (MIPWidth * NewY) + NewX] = OldBitmap[(Width * OldY) + OldX];
 			}
 		}
 
-		// Calculate offset of new LOD
-		Offset += LODHeight * LODWidth;
+		// Calculate offset of new MIP
+		Offset += MIPHeight * MIPWidth;
 	}
 
 
@@ -361,7 +356,7 @@ uchar CreateLODs(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height)		
 	*Bitmap = NewBitmap;
 	*BitmapSize = NewBitmapSize;
 
-	return LODCount;
+	return MIPCount;
 }
 
 void PaletteFix(uchar * RGBAPalette, ulong RGBAPaletteSize,  bool MulDiv)			// Fix/unfix color table
@@ -393,7 +388,7 @@ void PaletteFix(uchar * RGBAPalette, ulong RGBAPaletteSize,  bool MulDiv)			// F
 	}
 }
 
-bool ConvertBMPtoPHD(const char * FileName, bool HQResize)
+bool ConvertBMPtoPHD(const char * FileName)
 {
 	FILE *ptrInputF;						// Input file
 	FILE *ptrOutputF;						// Output file
@@ -401,7 +396,7 @@ bool ConvertBMPtoPHD(const char * FileName, bool HQResize)
 	sBMPHeader BMPHeader;
 	sPHDHeader PHDHeader;
 	sPSIHeader PSIHeader;
-	uchar LODCount;
+	uchar MIPCount;
 
 	uchar * RawBitmap;
 	ulong RawBitmapSize;
@@ -446,20 +441,17 @@ bool ConvertBMPtoPHD(const char * FileName, bool HQResize)
 		FlipBitmap(&RawBitmap, &RawBitmapSize, BMPHeader.Width, BMPHeader.Height);
 
 		// Fix palette
-		if (HQResize == true)
-			PaletteOverrideColors(RGBAPalette, RGBAPaletteSize, BitmapFetchBackgroud(RawBitmap, RawBitmapSize, BMPHeader.Width), BitmapFetchMax(RawBitmap, RawBitmapSize), false);
-		else
-			PaletteOverrideColors(RGBAPalette, RGBAPaletteSize, 0x00, 0xFF, false);
+		ConvertDecalPalette(RGBAPalette, RGBAPaletteSize, false);
 		PaletteFix(RGBAPalette, RGBAPaletteSize, false);
 
 		// Resize bitmap to proper size
 		uint OriginalWidth = BMPHeader.Width;
 		uint OriginalHeight = BMPHeader.Height;
-		BMPHeader.Update(PSIProperSize(OriginalWidth, HQResize), PSIProperSize(OriginalHeight, HQResize));
-		ScaleBitmap(&RawBitmap, &RawBitmapSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth, HQResize), PSIProperSize(OriginalHeight, HQResize));
+		BMPHeader.Update(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
+		ScaleBitmap(&RawBitmap, &RawBitmapSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
 
-		// Create LODs
-		LODCount = CreateLODs(&RawBitmap, &RawBitmapSize, BMPHeader.Width, BMPHeader.Height);
+		// Create MIPs
+		MIPCount = CreateMIPs(&RawBitmap, &RawBitmapSize, BMPHeader.Width, BMPHeader.Height);
 
 		// Create output file
 		FileGetFullName(FileName, OutFile, sizeof(OutFile));
@@ -471,7 +463,7 @@ bool ConvertBMPtoPHD(const char * FileName, bool HQResize)
 
 		// Write PSI header
 		FileGetName(FileName, TexName, sizeof(TexName), false);
-		PSIHeader.Update(TexName, BMPHeader.Width, BMPHeader.Height, PSI_INDEXED, LODCount);
+		PSIHeader.Update(TexName, BMPHeader.Width, BMPHeader.Height, PSI_INDEXED, MIPCount);
 		PSIHeader.UpdateUpscaleTaget(OriginalWidth, OriginalHeight);
 		FileWriteBlock(&ptrOutputF, &PSIHeader, sizeof(sPSIHeader));
 
@@ -560,10 +552,7 @@ bool ConvertPHDtoBMP(const char * FileName)
 		FlipBitmap(&RawBitmap, &RawBitmapSize, PSIHeader.Width, PSIHeader.Height);		
 
 		// Fix palette
-		if (PHDtoBMPAltMode == true)
-			PaletteOverrideColors(RGBAPalette, RGBAPaletteSize, BitmapFetchBackgroud(RawBitmap, RawBitmapSize, PSIHeader.Width), BitmapFetchMax(RawBitmap, RawBitmapSize), true);
-		else
-			PaletteOverrideColors(RGBAPalette, RGBAPaletteSize, 0x00, 0xFF, true);
+		ConvertDecalPalette(RGBAPalette, RGBAPaletteSize, true);
 
 		// Resize bitmap to it's original size
 		ScaleBitmap(&RawBitmap, &RawBitmapSize, PSIHeader.Width, PSIHeader.Height, PSIHeader.UpWidth, PSIHeader.UpHeight);
@@ -627,123 +616,56 @@ void FlipBitmap(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height)		/
 	*Bitmap = NewBitmap;
 }
 
-void PaletteOverrideColors(uchar * RGBAPalette, ulong RGBAPaletteSize, uchar BackgroundIndex, uchar MaxIndex, bool ToBMP)
+void ConvertDecalPalette(uchar * RGBAPalette, ulong RGBAPaletteSize, bool ToBMP)
 {
+	// Get decal color from the last entry in palette
 	uchar PaletteElementSize = 4;
+	int LastBase = (EIGHT_BIT_PALETTE_ELEMENTS_COUNT - 1) * PaletteElementSize;
+	uchar R = RGBAPalette[LastBase + 0];
+	uchar G = RGBAPalette[LastBase + 1];
+	uchar B = RGBAPalette[LastBase + 2];
 
-	// Get last color entry in palette
-	double R = RGBAPalette[(EIGHT_BIT_PALETTE_ELEMENTS_COUNT - 1) * PaletteElementSize + 0];
-	double G = RGBAPalette[(EIGHT_BIT_PALETTE_ELEMENTS_COUNT - 1) * PaletteElementSize + 1];
-	double B = RGBAPalette[(EIGHT_BIT_PALETTE_ELEMENTS_COUNT - 1) * PaletteElementSize + 2];
-
-	// Clear color table
-	memset(RGBAPalette, 0x00, RGBAPaletteSize);
-
-	// Patch color data
-	double Alpha = 0;
-	double Color = 0xFE;
-	double Step = 1;
-
-	// Hack that tries to tweak palette of decals like REFLECT1, {C1A1B and {DING1 to be closer to original PC look
-	if (MaxIndex > 0x3F)
+	if (ToBMP == true)
 	{
-		if (BackgroundIndex < 0x10)
-			Step = 1;
-		else
-			Step = (double)0xFF / (double)(MaxIndex + 1);
+		// Conversion to BMP:
+		//	entry #0   contains white color (transparent)
+		//	... color darkens
+		//	entry #254 contains black color (non-transparent)
+		//	entry #255 contains decal color
+
+		// Rewrite all entries except the last one
+		uchar Color;
+		for (uint i = 0, Color = 0xFF; i < (EIGHT_BIT_PALETTE_ELEMENTS_COUNT-1); i++, Color--)
+		{
+			RGBAPalette[i * PaletteElementSize + 0] = Color;
+			RGBAPalette[i * PaletteElementSize + 1] = Color;
+			RGBAPalette[i * PaletteElementSize + 2] = Color;
+			RGBAPalette[i * PaletteElementSize + 3] = 0x00;
+		}
+
+		// Fix the last one
+		RGBAPalette[LastBase + 3] = 0x00;
 	}
 	else
 	{
-		Step = (double)0xFF / (double)(MaxIndex + 1);
-	}
+		// Conversion to PHD:
+		//	entry #0   contains min alpha (transparent)
+		//	... alpha grows
+		//	entry #255 contains max alpha (non-transparent)
+		//	every entry contains the same color
 
-	for (uint i = 0; i < EIGHT_BIT_PALETTE_ELEMENTS_COUNT; i++)
-	{
-		if (ToBMP == true)		// Conversion to BMP
+		// Rewrite all entries except the last one
+		for (uint i = 0; i < (EIGHT_BIT_PALETTE_ELEMENTS_COUNT-1); i++)
 		{
-			if (i == 0)
-			{
-				// element #0 contains white color
-				RGBAPalette[0] = 0xFF;
-				RGBAPalette[1] = 0xFF;
-				RGBAPalette[2] = 0xFF;
-				RGBAPalette[3] = Alpha;
-			}
-			else if (i == 255)
-			{
-				// elemment #255 contains decal color
-				RGBAPalette[i * PaletteElementSize + 0] = (uchar) R;
-				RGBAPalette[i * PaletteElementSize + 1] = (uchar) G;
-				RGBAPalette[i * PaletteElementSize + 2] = (uchar) B;
-				RGBAPalette[i * PaletteElementSize + 3] = Alpha;
-			}
-			else if (i <= MaxIndex)
-			{
-				RGBAPalette[i * PaletteElementSize + 0] = (uchar) Color;
-				RGBAPalette[i * PaletteElementSize + 1] = (uchar) Color;
-				RGBAPalette[i * PaletteElementSize + 2] = (uchar) Color;
-				RGBAPalette[i * PaletteElementSize + 3] = Alpha;
-				Color -= Step;
-			}
+			RGBAPalette[i * PaletteElementSize + 0] = R;
+			RGBAPalette[i * PaletteElementSize + 1] = G;
+			RGBAPalette[i * PaletteElementSize + 2] = B;
+			RGBAPalette[i * PaletteElementSize + 3] = i;
 		}
-		else					// Conversion to PHD
-		{
-			RGBAPalette[i * PaletteElementSize + 0] = (uchar) R;
-			RGBAPalette[i * PaletteElementSize + 1] = (uchar) G;
-			RGBAPalette[i * PaletteElementSize + 2] = (uchar) B;
-			RGBAPalette[i * PaletteElementSize + 3] = (uchar) Alpha;
 
-			if (i <= MaxIndex)
-				Alpha += Step;
-		}
+		// Fix the last one
+		RGBAPalette[LastBase + 3] = 0xFF;
 	}
-}
-
-uchar BitmapFetchBackgroud(uchar * RGBABitmap, ulong RGBABitmapSize, uint Width)
-{
-	// Try to fetch index of background
-	if (RGBABitmap[0] == RGBABitmap[1] &&
-		RGBABitmap[Width] == RGBABitmap[Width + 1] &&
-		RGBABitmap[0] == RGBABitmap[Width])															// Check upper left corner
-	{
-		return RGBABitmap[0];
-	}
-	else if (RGBABitmap[Width - 1] == RGBABitmap[Width - 2] &&
-		RGBABitmap[Width * 2 - 1] == RGBABitmap[Width * 2 - 2] &&
-		RGBABitmap[Width - 1] == RGBABitmap[Width * 2 - 1])											// Check upper right corner
-	{
-		return RGBABitmap[Width - 1];
-	}
-	else if (RGBABitmap[RGBABitmapSize - Width] == RGBABitmap[RGBABitmapSize - Width + 1] &&
-		RGBABitmap[RGBABitmapSize - Width * 2] == RGBABitmap[RGBABitmapSize - Width * 2 + 1] &&
-		RGBABitmap[RGBABitmapSize - Width] == RGBABitmap[RGBABitmapSize - Width * 2])				// Check lower left corner
-	{
-		return RGBABitmap[RGBABitmapSize - Width];
-	}
-	else if (RGBABitmap[RGBABitmapSize - 2] == RGBABitmap[RGBABitmapSize - 1] &&
-		RGBABitmap[RGBABitmapSize - Width - 2] == RGBABitmap[RGBABitmapSize - Width - 1] &&
-		RGBABitmap[RGBABitmapSize - 2] == RGBABitmap[RGBABitmapSize - Width - 2])					// Check lower right corner
-	{
-		return RGBABitmap[RGBABitmapSize - 2];
-	}
-	else
-	{
-		puts("Can't fetch background color.");
-		return 0x00;
-	}
-}
-
-uchar BitmapFetchMax(uchar * RGBABitmap, ulong RGBABitmapSize)
-{
-	uchar Max = 0;
-
-	for (ulong i = 0; i < RGBABitmapSize; i++)
-	{
-		if (RGBABitmap[i] > Max)
-			Max = RGBABitmap[i];
-	}
-
-	return Max;
 }
 
 void PaletteSwapRedAndGreen(uchar * RGBAPalette, ulong RGBAPaletteSize)
@@ -785,43 +707,25 @@ int main(int argc, char * argv[])
 		printf("Processing file: %s \n", argv[1]);
 		if (!strcmp(Extension, ".png"))				// Convert PNG to PS2 HL Decal
 		{
-			if (ConvertPNGtoPHD(argv[1], false) == true)
+			if (ConvertPNGtoPHD(argv[1]) == true)
 				return 0;
 			else
 				puts("Can't convert decal ... \n");
 		}
 		else if (!strcmp(Extension, ".bmp"))		// Convert BMP to PS2 HL Decal
 		{
-			if (ConvertBMPtoPHD(argv[1], false) == true)
+			if (ConvertBMPtoPHD(argv[1]) == true)
 				return 0;
 			else
 				puts("Can't convert decal ... \n");
 		}
 		else										// Convert PS2 HL Decal to BMP
 		{
-			char Action;
-
-			puts("\nChoose output format: \np - PNG \nb - BMP");
-			do
-			{
-				fflush(stdout);
-				Action = getc(stdin);
-			} while (Action != 'p' && Action != 'b');
-
-			if (Action == 'p')
-			{
-				if (ConvertPHDtoPNG(argv[1]) == true)
-					return 0;
-				else
-					puts("Can't convert decal ... \n");
-			}
+			// Convert PS2 decals to bmp by default
+			if (ConvertPHDtoBMP(argv[1]) == true)
+				return 0;
 			else
-			{
-				if (ConvertPHDtoBMP(argv[1]) == true)
-					return 0;
-				else
-					puts("Can't convert decal ... \n");
-			}
+				puts("Can't convert decal ... \n");
 		}
 	}
 	else if (argc == 3)
@@ -833,47 +737,6 @@ int main(int argc, char * argv[])
 				return 0;
 			else
 				puts("Can't convert decal ... \n");
-		}
-		else if (!strcmp(argv[1], "tobmp"))
-		{
-			printf("Processing file: %s \n", argv[2]);
-			if (ConvertPHDtoBMP(argv[2]) == true)				// Convert BMP to PS2 HL Decal
-				return 0;
-			else
-				puts("Can't convert decal ... \n");
-		}
-		else if (!strcmp(argv[1], "altbmp"))
-		{
-			PHDtoBMPAltMode = true;
-			printf("Processing file: %s \n", argv[2]);
-			if (ConvertPHDtoBMP(argv[2]) == true)				// Convert BMP to PS2 HL Decal
-				return 0;
-			else
-				puts("Can't convert decal ... \n");
-		}
-		else if (!strcmp(argv[1], "hq"))
-		{
-			FileGetExtension(argv[2], Extension, sizeof(Extension));
-
-			printf("Processing file: %s \n", argv[2]);
-			if (!strcmp(Extension, ".png") == true)				// Convert PNG to PS2 HL Decal
-			{
-				if (ConvertPNGtoPHD(argv[2], true) == true)
-					return 0;
-				else
-					puts("Can't convert decal ... \n");
-			}
-			else if (!strcmp(Extension, ".bmp") == true)
-			{
-				if (ConvertBMPtoPHD(argv[2], true) == true)
-					return 0;
-				else
-					puts("Can't convert decal ... \n");
-			}
-			else
-			{
-				puts("Wrong file extension ... \n");
-			}
 		}
 		else
 		{
