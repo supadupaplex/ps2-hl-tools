@@ -46,7 +46,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.27"
+#define PROG_VERSION "1.3"
 
 #define PSI_MIN_DIMENSION 8
 #define EIGHT_BIT_PALETTE_ELEMENTS_COUNT 256

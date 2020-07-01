@@ -42,11 +42,13 @@ POSSIBILITY OF SUCH DAMAGE.
 bool ConvertPNGtoPHD(const char * FileName);
 bool ConvertPHDtoPNG(const char * FileName);
 uint PSIProperSize(uint Size);
-void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHeight, uint NewWidth, uint NewHeight);
+void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHeight, uint NewWidth, uint NewHeight, bool Linear);
+int BilinearPixel(uchar * Bitmap, int Width, int Height, int NewWidth, int NewHeight, int nx, int ny);
+uchar LinFilter(uchar PxBegin, uchar PxEnd, float Ratio);
 uchar CreateMIPs(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height);
 void PaletteFix(uchar * RGBAPalette, ulong RGBAPaletteSize, bool MulDiv);
-bool ConvertBMPtoPHD(const char * FileName);
-bool ConvertPHDtoBMP(const char * FileName);
+bool ConvertBMPtoPHD(const char * FileName, bool Linear);
+bool ConvertPHDtoBMP(const char * FileName, bool Linear);
 void ConvertDecalPalette(uchar * RGBAPalette, ulong RGBAPaletteSize, bool ToBMP);
 void PaletteSwapRedAndGreen(uchar * RGBAPalette, ulong RGBAPaletteSize);
 void FlipBitmap(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height);
@@ -93,7 +95,7 @@ bool ConvertPNGtoPHD(const char * FileName)
 		uint OriginalWidth = PNGHeader.Width;
 		uint OriginalHeight = PNGHeader.Height;
 		PNGHeader.Update(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight), PNG_INDEXED);
-		ScaleBitmap(&PNGBitmap->Data, &PNGBitmap->DataSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
+		ScaleBitmap(&PNGBitmap->Data, &PNGBitmap->DataSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight), false);
 
 		// Create MIPs
 		MIPCount = CreateMIPs(&PNGBitmap->Data, &PNGBitmap->DataSize, PNGHeader.Width, PNGHeader.Height);
@@ -200,7 +202,7 @@ bool ConvertPHDtoPNG(const char * FileName)
 			exit(EXIT_FAILURE);
 		}
 		FileReadBlock(&ptrInputF, RawBitmap, sizeof(sPHDHeader) + sizeof(sPSIHeader) + RGBAPaletteSize, RawBitmapSize);
-		ScaleBitmap(&RawBitmap, &RawBitmapSize, PSIHeader.Width, PSIHeader.Height, PSIHeader.UpWidth, PSIHeader.UpHeight);	// Resize bitmap to it's original size
+		ScaleBitmap(&RawBitmap, &RawBitmapSize, PSIHeader.Width, PSIHeader.Height, PSIHeader.UpWidth, PSIHeader.UpHeight, false);	// Resize bitmap to it's original size
 		PNGBitmap.Data = RawBitmap;
 		PNGBitmap.DataSize = RawBitmapSize;
 
@@ -264,9 +266,13 @@ uint PSIProperSize(uint Size)	// Function returns closest proper dimension. PS2 
 	}
 }
 
-void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHeight, uint NewWidth, uint NewHeight)
+void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHeight, uint NewWidth, uint NewHeight, bool Linear)
 {
 	uchar * NewBitmap;
+
+	// Skip if image has target size already
+	if (OldWidth == NewWidth && OldHeight == NewHeight)
+		return;
 
 	// Allocate memory for new bitmap
 	NewBitmap = (uchar *)malloc(NewWidth * NewHeight);
@@ -278,15 +284,29 @@ void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHei
 	}
 
 	// Resize bitmap
-	for (uint NewY = 0; NewY < NewHeight; NewY++)
-		for (uint NewX = 0; NewX < NewWidth; NewX++)
-		{
-			uint OldY = (uint)round((double)NewY / (NewHeight - 1) * (OldHeight - 1));
-			uint OldX = (uint)round((double)NewX / (NewWidth - 1) * (OldWidth - 1));
+	if (Linear)
+	{
+		// Linear, works only with BMP decals
+		uchar * pPixel = NewBitmap;
+		for (uint NewY = 0; NewY < NewHeight; NewY++)
+			for (uint NewX = 0; NewX < NewWidth; NewX++)
+			{
+				*pPixel = BilinearPixel(*Bitmap, OldWidth, OldHeight, NewWidth, NewHeight, NewX, NewY);
+				pPixel++;
+			}
+	}
+	else
+	{
+		// Nearest, always works
+		for (uint NewY = 0; NewY < NewHeight; NewY++)
+			for (uint NewX = 0; NewX < NewWidth; NewX++)
+			{
+				uint OldY = (uint)round((double)NewY / (NewHeight - 1) * (OldHeight - 1));
+				uint OldX = (uint)round((double)NewX / (NewWidth - 1) * (OldWidth - 1));
 
-			NewBitmap[(NewWidth * NewY) + NewX] = (*Bitmap)[(OldWidth * OldY) + OldX];
-		}
-
+				NewBitmap[(NewWidth * NewY) + NewX] = (*Bitmap)[(OldWidth * OldY) + OldX];
+			}
+	}
 
 	// Destroy old bitmap
 	free(*Bitmap);
@@ -296,6 +316,58 @@ void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHei
 
 	// Update bitmap size
 	*BitmapSize = NewWidth * NewHeight;
+}
+
+// Args:
+// PxBegin [		/Ratio/  ] PxEnd; ratio is between 0.0 and 1.0
+// return - filtered value
+uchar LinFilter(uchar PxBegin, uchar PxEnd, float Ratio)
+{
+	// Check ratio
+	if (Ratio <= 0)
+		return PxBegin;
+	if (Ratio >= 1)
+		return PxEnd;
+
+	// Get result
+	return (uchar) roundf( Ratio*((float)PxEnd-(float)PxBegin) + (float)PxBegin );
+}
+
+// Args:
+// Bitmap, Width, Height - original bitmap pointer and dimensions
+// Width, Height - new bitmap dimensions
+// nx, ny - new bitmap pixel coordinates
+// return - index of new bitmap pixel
+#define CAP_VAL(VAL, MIN, MAX)	{ if (VAL > (MAX)) VAL = (MAX); else if (VAL < (MIN)) VAL = (MIN); }
+int BilinearPixel(uchar * Bitmap, int Width, int Height, int NewWidth, int NewHeight, int nx, int ny)
+{
+	// Calculate sample coordinates
+	float PxSzX = (float)Width / (float)NewWidth;
+	float PxSzY = (float)Height / (float)NewHeight;
+	float CoordX = PxSzX * ((float)nx + 0.5) - 0.5;
+	float CoordY = PxSzY * ((float)ny + 0.5) - 0.5;
+	CAP_VAL(CoordX, 0, Width-1);
+	CAP_VAL(CoordY, 0, Height-1);
+
+	// Collect pixels for filter
+	float RatioX, RatioY, IntX, IntY;
+	int Left, Top, Right, Bottom;
+	RatioX = modff(CoordX, &IntX);
+	RatioY = modff(CoordY, &IntY);
+	Right = Left = (int)IntX;
+	Bottom = Top = (int)IntY;
+	Right++;
+	Bottom++;
+	CAP_VAL(Right, 0, Width-1);
+	CAP_VAL(Bottom, 0, Height-1);
+
+	// Apply linear filter
+	uchar hSampleTop, hSampleBot;
+	int BaseTop = Width * Top;
+	int BaseBot = Width * Bottom;
+	hSampleTop = LinFilter(*(Bitmap+BaseTop+Left), *(Bitmap+BaseTop+Right), RatioX);
+	hSampleBot = LinFilter(*(Bitmap+BaseBot+Left), *(Bitmap+BaseBot+Right), RatioX);
+	return LinFilter(hSampleTop, hSampleBot, RatioY);
 }
 
 uchar CreateMIPs(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height)			// Create MIPs for decal. Function overrides old bitmap and returns MIP count.
@@ -388,7 +460,7 @@ void PaletteFix(uchar * RGBAPalette, ulong RGBAPaletteSize,  bool MulDiv)			// F
 	}
 }
 
-bool ConvertBMPtoPHD(const char * FileName)
+bool ConvertBMPtoPHD(const char * FileName, bool Linear)
 {
 	FILE *ptrInputF;						// Input file
 	FILE *ptrOutputF;						// Output file
@@ -448,7 +520,7 @@ bool ConvertBMPtoPHD(const char * FileName)
 		uint OriginalWidth = BMPHeader.Width;
 		uint OriginalHeight = BMPHeader.Height;
 		BMPHeader.Update(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
-		ScaleBitmap(&RawBitmap, &RawBitmapSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
+		ScaleBitmap(&RawBitmap, &RawBitmapSize, OriginalWidth, OriginalHeight, PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight), Linear);
 
 		// Create MIPs
 		MIPCount = CreateMIPs(&RawBitmap, &RawBitmapSize, BMPHeader.Width, BMPHeader.Height);
@@ -492,7 +564,7 @@ bool ConvertBMPtoPHD(const char * FileName)
 	return true;
 }
 
-bool ConvertPHDtoBMP(const char * FileName)
+bool ConvertPHDtoBMP(const char * FileName, bool Linear)
 {
 	FILE *ptrInputF;						// Input file
 	FILE *ptrOutputF;						// Output file
@@ -555,7 +627,7 @@ bool ConvertPHDtoBMP(const char * FileName)
 		ConvertDecalPalette(RGBAPalette, RGBAPaletteSize, true);
 
 		// Resize bitmap to it's original size
-		ScaleBitmap(&RawBitmap, &RawBitmapSize, PSIHeader.Width, PSIHeader.Height, PSIHeader.UpWidth, PSIHeader.UpHeight);
+		ScaleBitmap(&RawBitmap, &RawBitmapSize, PSIHeader.Width, PSIHeader.Height, PSIHeader.UpWidth, PSIHeader.UpHeight, Linear);
 
 		// Create output file
 		FileGetFullName(FileName, OutFile, sizeof(OutFile));
@@ -714,7 +786,7 @@ int main(int argc, char * argv[])
 		}
 		else if (!strcmp(Extension, ".bmp"))		// Convert BMP to PS2 HL Decal
 		{
-			if (ConvertBMPtoPHD(argv[1]) == true)
+			if (ConvertBMPtoPHD(argv[1], true) == true)
 				return 0;
 			else
 				puts("Can't convert decal ... \n");
@@ -722,7 +794,7 @@ int main(int argc, char * argv[])
 		else										// Convert PS2 HL Decal to BMP
 		{
 			// Convert PS2 decals to bmp by default
-			if (ConvertPHDtoBMP(argv[1]) == true)
+			if (ConvertPHDtoBMP(argv[1], true) == true)
 				return 0;
 			else
 				puts("Can't convert decal ... \n");
