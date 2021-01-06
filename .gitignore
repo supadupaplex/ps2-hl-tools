@@ -1,0 +1,5 @@
+**/obj
+source/build/
+source/common/zconf.h
+source/common/zlib.h
+source/common/zlib
