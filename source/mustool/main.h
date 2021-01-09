@@ -68,13 +68,13 @@ POSSIBILITY OF SUCH DAMAGE.
 #pragma pack(1)				// Eliminate unwanted 0x00 bytes
 struct sVAGHeader
 {
-	ulong Signature;		// “VAGp” (0x56414770) signature
+	ulong Signature;		// "VAGp" (0x56414770) signature
 	ulong Version;			// Should be 0x20 for PS2 HL
 	ulong Magic1;			// = 0
 	ulong DataSize;			// Size of file without header
 	ulong SamplingF;		// Sampling frequency. Should be 44100 (0xAC44) for PS2 Half-life
 	uchar Magic2[10];		// Filled with zeroes
-	uchar Channels;			// 0-1 – one channel (mono), 2 – two channels (stereo). PS2 HL supports mono only
+	uchar Channels;			// 0-1 - one channel (mono), 2 - two channels (stereo). PS2 HL supports mono only
 	uchar Magic3;			// = 0
 	char Name[16];			// Internal file mane
 
@@ -116,12 +116,12 @@ struct sVAGHeader
 		memset(this, 0x00, sizeof(sVAGHeader));
 
 		// Update structure
-		this->Signature = 0x56414770;	// “VAGp” (0x56414770) signature
+		this->Signature = 0x56414770;	// "VAGp" (0x56414770) signature
 		this->Version = 0x20;			// Should be 0x20 for PS2 HL
 		this->Magic1 = 0;				// = 0
 		this->DataSize = NewDataSize;	// Size of file without header
 		this->SamplingF = 44100;		// Sampling frequency. Should be 44100 (0xAC44) for PS2 Half-life
-		this->Channels = 0;				// 0-1 – one channel (mono), 2 – two channels (stereo). PS2 HL supports mono only
+		this->Channels = 0;				// 0-1 - one channel (mono), 2 - two channels (stereo). PS2 HL supports mono only
 		this->Magic3 = 0;				// = 0
 		snprintf(this->Name, sizeof(Name), "%s", NewName);		// Internal file mane
 	}
