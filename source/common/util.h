@@ -1,5 +1,5 @@
 // Author:	supadupaplex
-// License:	check out readme.txt and license.txt
+// License:	BSD-3-Clause (check out license.txt)
 
 #ifndef UTIL_H
 #define UTIL_H

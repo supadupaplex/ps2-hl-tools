@@ -1,5 +1,5 @@
 // Author:	supadupaplex
-// License:	cheack readme.txt and license.txt
+// License:	BSD-3-Clause (check out license.txt)
 
 //
 // This file contains functions that perporm various operations with PNG files

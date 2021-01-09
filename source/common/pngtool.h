@@ -1,3 +1,6 @@
+// Author:	supadupaplex
+// License:	BSD-3-Clause (check out license.txt)
+
 #ifndef PNGTOOL_H
 #define PNGTOOL_H
 
