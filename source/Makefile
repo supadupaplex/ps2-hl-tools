@@ -36,11 +36,16 @@ clean: epctool-clean \
 	sprtool-clean \
 	txttool-clean
 
-release: clean-all all
-	echo "build date: `date +%d-%m-%Y`, build time: `date +%H-%M-%S`" > $(BLDDIR)/build-info.txt
+chzip:
+	echo "> Checking 7z location ..." && which 7z
+
+release: chzip clean-all all
+	echo "build info" > $(BLDDIR)/build-info.txt
+	echo "date: `date +%d-%m-%Y`" >> $(BLDDIR)/build-info.txt
+	echo "time: `date +%H-%M-%S`" >> $(BLDDIR)/build-info.txt
 	cp $(LICFILE) $(BLDDIR)/
 	cp $(RMEFILE) $(BLDDIR)/
-	zip -r $(RELDIR)/release-latest.zip $(BLDDIR)/
+	7z a -tzip -mx=9 $(RELDIR)/release-latest.zip $(BLDDIR)/
 
 # tools
 %tool: cpu-chk zlib-build
