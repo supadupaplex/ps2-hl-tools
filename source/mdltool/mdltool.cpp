@@ -269,8 +269,7 @@ void ConvertMDLToDOL(const char * FileName)	// Convert model from PC to PS2 form
 		FileGetExtension(ModelTextureTable[i].Name, TexExtension, sizeof(TexExtension));
 		if (!strcmp(TexExtension, ".pvr") == true)
 		{
-			puts("Dreamcast model conversion is not suppotred ...");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Dreamcast model conversion is not suppotred ...");
 			exit(EXIT_FAILURE);
 		}
 
@@ -1401,17 +1400,14 @@ int main(int argc, char * argv[])
 	char cFileExtension[5];
 
 	// Output info
-	printf("\nPS2 HL model tool v%s \n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	// Check arguments
 	if (argc == 1)
 	{
 		// No arguments - show help screen
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop model file on mdltool.exe \n2) Command line/Batch - mdltool [model_file_name] \nOptional features:\n - extract textures: mdltool extract [filename]\n - report sequences: mdltool seqrep [filename]  \n\nFor more info read ReadMe.txt \n");
-		puts("Press any key to exit ...");
-
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)		// Convert model
 	{

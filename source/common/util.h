@@ -16,9 +16,9 @@
 // Wait for key
 //#define NO_WAIT
 #ifdef NO_WAIT
-	#define UTIL_WAIT_KEY
+	#define UTIL_WAIT_KEY(MSG)
 #else
-	#define UTIL_WAIT_KEY	{ fflush(stdout); getc(stdin); }
+	#define UTIL_WAIT_KEY(MSG)	{ puts(MSG); fflush(stderr); fflush(stdout); getc(stdin); }
 #endif
 
 #endif // UTIL_H

@@ -17,7 +17,17 @@
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "0.9"
+#define PROG_TITLE "\nPS2 HL EPC tool v0.9\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2018-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+\n\
+How to use:\n\
+1) Windows explorer - drag and drop *.txt file on epctool.exe\n\
+2) Command line\\Batch - epctool [file_name]\n\
+\n\
+For more info check out readme.txt\n\
+"
 #define PS2HL_EPC_ALLIGNMENT 4
 #define MAX_ITEMS 256
 

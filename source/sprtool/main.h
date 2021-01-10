@@ -17,7 +17,17 @@
 #include <ctype.h>	// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.32"
+#define PROG_TITLE "\nPS2 HL Sprite Tool v1.32\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2017-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+\n\
+How to use:\n\
+1) Windows explorer - drag and drop sprite file on sprtool.exe\n\
+2) Command line\\Batch - sprtool (noresize/lin) [file_name]\n\
+\n\
+For more info check out readme.txt\n\
+"
 #define EIGHT_BIT_PALETTE_ELEMENTS_COUNT 256
 #define SPZ_PALETTE_ELEMENT_SIZE 4
 #define SPR_PALETTE_ELEMENT_SIZE 3
@@ -300,8 +310,7 @@ struct sTexture
 		Bitmap = (uchar *)malloc(FileBitmapSize);
 		if (Palette == NULL || Bitmap == NULL)
 		{
-			puts("Unable to allocate memory ...");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 
@@ -379,8 +388,7 @@ struct sTexture
 			NewPalette = (uchar *)malloc(NewPaletteSize);
 			if (NewPalette == NULL)
 			{
-				puts("Unable to allocate memory!");
-				UTIL_WAIT_KEY;
+				UTIL_WAIT_KEY("Unable to allocate memory ...");
 				exit(EXIT_FAILURE);
 			}
 
@@ -443,8 +451,7 @@ struct sTexture
 			NewPalette = (uchar *)malloc(NewPaletteSize);
 			if (NewPalette == NULL)
 			{
-				puts("Unable to allocate memory!");
-				UTIL_WAIT_KEY;
+				UTIL_WAIT_KEY("Unable to allocate memory ...");
 				exit(EXIT_FAILURE);
 			}
 
@@ -534,8 +541,7 @@ struct sTexture
 		NewBitmap = (uchar *)malloc(NewWidth * NewHeight);
 		if (NewBitmap == NULL)
 		{
-			puts("Unable to allocate memory!");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 
@@ -778,8 +784,7 @@ struct sTexture
 		NewRGBABitmap = (ulong *)malloc(NewWidth * NewHeight * 4);
 		if (NewRGBABitmap == NULL)
 		{
-			puts("Unable to allocate memory!");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 

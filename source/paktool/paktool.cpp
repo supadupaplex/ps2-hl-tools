@@ -272,8 +272,7 @@ void ExtractPAK(const char * cFile)
 			TempBuffer = (char *)malloc(TempBufferSize);
 			if (TempBuffer == NULL)
 			{
-				puts("Unable to allocate memory ...");
-				UTIL_WAIT_KEY;
+				UTIL_WAIT_KEY("Unable to allocate memory ...");
 				exit(1);
 			}
 			FileReadBlock(&ptrInputF, TempBuffer, PS2PAKFileEntry.FileOffset, PS2PAKFileEntry.FileSize);
@@ -606,8 +605,7 @@ void ConvertToGRE(const char * cFile)
 	PAKData = (char *)malloc(PAKDataSize);
 	if (PAKData == NULL)
 	{
-		puts("Unable to allocate memory ...");
-		UTIL_WAIT_KEY;
+		UTIL_WAIT_KEY("Unable to allocate memory ...");
 		exit(1);
 	}
 	FileReadBlock(&ptrInPAK, PAKData, 0, PAKDataSize);
@@ -618,8 +616,7 @@ void ConvertToGRE(const char * cFile)
 	PAKFileCount = PAKFileTableSize / sizeof(sPS2PAKFileEntry);
 	if (PAKFileTable == NULL)
 	{
-		puts("Unable to allocate memory ...");
-		UTIL_WAIT_KEY;
+		UTIL_WAIT_KEY("Unable to allocate memory ...");
 		exit(1);
 	}
 	FileReadBlock(&ptrInPAK, PAKFileTable, PS2PAKHeader.Normal.TableOffset, PAKFileTableSize);
@@ -671,8 +668,8 @@ void ConvertToGRE(const char * cFile)
 	if (ModelFlag == true)
 	{
 		puts("Warning! Model files should not be inside GLOBAL.PAK and GRESTORE.PAK.");
-		puts("You may experience problems with those PAK's. Press any key to confirm ... \n");
-		UTIL_WAIT_KEY;
+		puts("You may experience problems with those PAK's.\n");
+		UTIL_WAIT_KEY("Press any key to confirm ...");
 	}
 
 	// Free memory
@@ -692,15 +689,12 @@ int main(int argc, char * argv[])
 	char cNewFileName[PATH_LEN];
 	char Action;
 
-	printf("PS2 HL PAK tool v%s \n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2020, Alexey Leushin. All rights reserved.");
-		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop file or directory on paktool.exe \n2) Command line\\Batch - paktool [file\\dir_name] \n\nFor more info read ReadMe.txt \n");
-		puts("Press any key to exit ...");
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)
 	{

@@ -87,14 +87,14 @@ uint SetSubmodels(char * Buffer)
 				// Give warning if submodel number is wrong
 				if (Number > 31)
 				{
-					puts("Waning: found submodel number > 31, ignoring. \nPress any key to confirm ...");
-					UTIL_WAIT_KEY;
+					puts("Waning: found submodel number > 31, ignoring.\n");
+					UTIL_WAIT_KEY("Press any key to confirm ...");
 					continue;
 				}
 				else if (Number == 0)
 				{
-					puts("Waning: submodel number 0 can result in unexpected consequences. \nPress any key to confirm ...");
-					UTIL_WAIT_KEY;
+					puts("Waning: submodel number 0 can result in unforseen consequences.\n");
+					UTIL_WAIT_KEY("Press any key to confirm ...");
 				}
 
 				// Set up submodel flag
@@ -626,14 +626,12 @@ int main(int argc, char * argv[])
 {
 	char cExtension[5];
 
-	printf("\nPS2 HL EPC tool v%s \n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2018, Alexey Leushin. All rights reserved.");
-		puts("How to use: \n1) Windows explorer - drag and drop *.txt file on epctool.exe \n2) Command line\\Batch - epctool [file_name] \n\nFor more info read ReadMe.txt \n");
-		puts("Press any key to exit ...");
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)
 	{

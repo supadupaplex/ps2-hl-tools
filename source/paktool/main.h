@@ -21,7 +21,18 @@
 #include <assert.h>
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.32"
+#define PROG_TITLE "\nPS2 HL PAK tool v1.32\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2017-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+Zlib library is used to perform deflate/inflate operations\n\
+\n\
+How to use:\n\
+1) Windows explorer - drag and drop file or directory on paktool.exe\n\
+2) Command line\\Batch - paktool [file\\dir_name]\n\
+\n\
+For more info check out readme.txt\n\
+"
 #define PAK_NORMAL 0
 #define PAK_COMPRESSED 1
 #define PAK_UNKNOWN -1

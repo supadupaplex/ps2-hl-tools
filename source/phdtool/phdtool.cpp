@@ -249,8 +249,7 @@ void ScaleBitmap(uchar ** Bitmap, ulong * BitmapSize, uint OldWidth, uint OldHei
 	NewBitmap = (uchar *)malloc(NewWidth * NewHeight);
 	if (NewBitmap == NULL)
 	{
-		puts("Unable to allocate memory!");
-		UTIL_WAIT_KEY;
+		UTIL_WAIT_KEY("Unable to allocate memory ...");
 		exit(EXIT_FAILURE);
 	}
 
@@ -642,8 +641,7 @@ void FlipBitmap(uchar ** Bitmap, ulong * BitmapSize, uint Width, uint Height)		/
 	NewBitmap = (uchar *)malloc(Width * Height);
 	if (NewBitmap == NULL)
 	{
-		puts("Unable to allocate memory!");
-		UTIL_WAIT_KEY;
+		UTIL_WAIT_KEY("Unable to allocate memory ...");
 		exit(EXIT_FAILURE);
 	}
 
@@ -730,18 +728,14 @@ int main(int argc, char * argv[])
 	char Extension[5];
 
 	// Output info
-	printf("PS2 HL decal (PHD) tool v%s \n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	// Check arguments
 	if (argc == 1)
 	{
 		// No arguments - show help screen
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017, Alexey Leushin. All rights reserved.");
-		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop PS2 HL Decal or PNG file on phdtool.exe \n2) Command line/Batch - phdtool [file_name]  \nOptional: convert to PNG - phdtool topng [phd_file_name] \n");
-		puts("\nFor more info read ReadMe.txt \n");
-		puts("Press any key to exit ...");
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)
 	{

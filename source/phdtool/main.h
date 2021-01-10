@@ -17,7 +17,19 @@
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.3"
+#define PROG_TITLE "\nPS2 HL decal (PHD) tool v1.3\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2017-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+Zlib library is used to perform deflate/inflate operations\n\
+\n\
+How to use:\n\
+1) Windows explorer - drag and drop PS2 HL Decal or PNG file on phdtool.exe\n\
+2) Command line/Batch - phdtool [file_name]\n\
+Optional: convert to PNG - phdtool topng [phd_file_name]\n\
+\n\
+For more info check out readme.txt\n\
+"
 
 #define PSI_MIN_DIMENSION 8
 #define EIGHT_BIT_PALETTE_ELEMENTS_COUNT 256

@@ -17,7 +17,18 @@
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "0.9"
+#define PROG_TITLE "\nPS2 HL NOD tool v0.9\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2018-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+\n\
+How to use: \n\
+1) Windows explorer - drag and drop *.nod file on nodtool.exe\n\
+2) Command line\\Batch - nodtool [file_name]\n\
+\tCheck file: nodtool test [file_name]\n\
+\n\
+For more info check out readme.txt\n\
+"
 
 // Node format specificators
 enum eNodFormats
@@ -202,8 +213,7 @@ struct sNodeGraph
 		// Check allocation
 		if (CNodes == NULL || CLinks == NULL || DistInfo == NULL || Routes == NULL || Hashes == NULL)
 		{
-			puts("Memory allocation failed!");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 

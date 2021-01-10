@@ -257,15 +257,12 @@ int main(int argc, char * argv[])
 {
 	char cExtension[5];
 
-	printf("\nPS2 HL TXT tool v%s \n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.");
-		puts("Zlib library is used within this program to perform DEFLATE\\INFLATE operations.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop *.txt file txttool.exe \n2) Command line\\Batch - txttool [file_name] \n\nFor more info read ReadMe.txt \n");
-		puts("Press any key to exit ...");
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)
 	{

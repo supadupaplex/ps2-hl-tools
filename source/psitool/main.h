@@ -17,7 +17,18 @@
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.11"
+#define PROG_TITLE "\nPS2 HL image tool v1.11\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2017-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+Zlib library is used to perform deflate/inflate operations\n\
+\n\
+How to use:\n\
+1) Windows explorer - drag and drop image file on psitool.exe\n\
+2) Command line/Batch - psitool [image_file_name]\n\
+\n\
+For more info check out readme.txt \n\
+"
 
 // Image types
 #define PSI_UNKNOWN 0

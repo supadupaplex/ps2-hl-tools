@@ -17,7 +17,23 @@
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.23"
+#define PROG_TITLE "\nPS2 HL music tool v1.23\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2017-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+\n\
+How to use:\n\
+1) Windows explorer - drag and drop *.VAG\\*.WAV audio file on mustool.exe\n\
+2) Command line\\Batch:\n\
+\ta) Make *.VAG\\*.WAV audio file readable for Awave\\VGSC:\n\
+\t\tmustool patch [filename]\n\
+\tb) Make *.VAG\\*.WAV audio file readable for PS2 HL:\n\
+\t\tmustool unpatch [filename]\n\
+\tc) Check *.VAG\\*.WAV audio file:\n\
+\t\tmustool test [filename]\n\
+\n\
+For more info check out readme.txt\n\
+"
 #define VAG_PS2 0
 #define VAG_NORMAL 1
 #define VAG_UNSUPPORTED 2

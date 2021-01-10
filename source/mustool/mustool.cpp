@@ -43,8 +43,7 @@ void UnpatchVAG(const char * FileName)		// Remove header from VAG file (PS2 HL m
 	{
 		printf("Internal name: \"%s\", Channels: %i, Sampling frequency: %i \n", VAGHeader.Name, (VAGHeader.Channels == 0 ? 1 : VAGHeader.Channels), VAGHeader.SamplingF);
 		printf("Warning: PS2 HL supports only 1 channel 44100 Hz audio. \nYou may encounter problems with this file. \n");
-		puts("Press any key to confirm ...");
-		UTIL_WAIT_KEY;
+		UTIL_WAIT_KEY("Press any key to confirm ...");
 	}
 	else if (VAGHeader.CheckType() == VAG_PS2)
 	{
@@ -212,8 +211,7 @@ void UnpatchWAV(const char * FileName)		// Remove header from WAV file
 			WAVHeader.Normal.WaveChunk.SamplingF,
 			WAVHeader.Normal.WaveChunk.BitsPerSample);
 		printf("Warning: PS2 HL supports only 8-bit 1 channel 11025/22050/44100 Hz audio. \nYou may encounter problems with this file. \n");
-		puts("Press any key to confirm ...");
-		UTIL_WAIT_KEY;
+		UTIL_WAIT_KEY("Press any key to confirm ...");
 	}
 	else
 	{
@@ -403,21 +401,14 @@ int main(int argc, char * argv[])
 	char Line[80];
 
 	// Output info
-	printf("\n\nPS2 HL music tool v%s \n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	// Check arguments
 	if (argc == 1)
 	{
 		// No arguments - show help screen
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2018, Alexey Leushin. All rights reserved.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop *.VAG\\*.WAV audio file on mustool.exe");
-		puts("\n2) Command line\\Batch: \n\tI) Make *.VAG\\*.WAV audio file readable for Awave\\VGSC: \n\t\tmustool patch [filename]");
-		puts("\n\tII) Make *.VAG\\*.WAV audio file readable for PS2 HL: \n\t\tmustool unpatch [filename]");
-		puts("\n\tIII) Check *.VAG\\*.WAV audio file : \n\t\tmustool test [filename]");
-		puts("\nFor more info read ReadMe file.\n");
-		puts("Press any key to exit ...");
-
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)
 	{

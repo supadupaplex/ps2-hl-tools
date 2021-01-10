@@ -17,7 +17,20 @@
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_VERSION "1.15"
+#define PROG_TITLE "\nPS2 HL model tool v1.15\n"
+#define PROG_INFO "\
+Developed by supadupaplex, 2017-2021\n\
+License: BSD-3-Clause (check out license.txt)\n\
+\n\
+How to use:\n\
+1) Windows explorer - drag and drop model file on mdltool.exe\n\
+2) Command line/Batch - mdltool [model_file_name]\n\
+Optional features:\n\
+ - extract textures: mdltool extract [filename]\n\
+ - report sequences: mdltool seqrep [filename]\n\
+\n\
+For more info check out readme.txt\n\
+"
 #define DOL_TEXTURE_HEADER_SIZE 0x20
 #define BMP_TEXTURE_HEADER_SIZE 0x35
 #define MDL_TEXTURE_HEADER_SIZE 0x00
@@ -270,8 +283,7 @@ struct sTexture
 		Bitmap = (uchar *) malloc(FileBitmapSize);
 		if (Palette == NULL || Bitmap == NULL)
 		{
-			puts("Unable to allocate memory ...");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 
@@ -310,8 +322,7 @@ struct sTexture
 		NewBitmap = (char *) malloc(NewWidth * NewHeight);	
 		if (NewBitmap == NULL)
 		{
-			puts("Unable to allocate memory!");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 
@@ -345,8 +356,7 @@ struct sTexture
 		NewBitmap = (char *)malloc(NewWidth * NewHeight);
 		if (NewBitmap == NULL)
 		{
-			puts("Unable to allocate memory!");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 
@@ -394,8 +404,7 @@ struct sTexture
 		NewBitmap = (char *)malloc(this->Width * this->Height);
 		if (NewBitmap == NULL)
 		{
-			puts("Unable to allocate memory!");
-			UTIL_WAIT_KEY;
+			UTIL_WAIT_KEY("Unable to allocate memory ...");
 			exit(EXIT_FAILURE);
 		}
 
@@ -465,8 +474,7 @@ struct sTexture
 			NewPalette = (char *)malloc(NewPaletteSize);
 			if (NewPalette == NULL)
 			{
-				puts("Unable to allocate memory!");
-				UTIL_WAIT_KEY;
+				UTIL_WAIT_KEY("Unable to allocate memory ...");
 				exit(EXIT_FAILURE);
 			}
 
@@ -504,8 +512,7 @@ struct sTexture
 			NewPalette = (char *)malloc(NewPaletteSize);
 			if (NewPalette == NULL)
 			{
-				puts("Unable to allocate memory!");
-				UTIL_WAIT_KEY;
+				UTIL_WAIT_KEY("Unable to allocate memory ...");
 				exit(EXIT_FAILURE);
 			}
 

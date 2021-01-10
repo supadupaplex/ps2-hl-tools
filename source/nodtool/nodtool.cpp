@@ -67,15 +67,15 @@ void ConvertNOD(const char * FileName)
 	Result = NGraph.UpdateFromFile(&ptrFile);
 	if (Result == NOD_ERR_VERSION)
 	{
-		printf("Unknown file: version %d, should be 16 \nPress any key to exit... \n\n", NGraph.Version);
-		UTIL_WAIT_KEY;
+		printf("Unknown file: version %d, should be 16\n", NGraph.Version);
+		UTIL_WAIT_KEY("Press any key to exit...");
 		fclose(ptrFile);
 		return;
 	}
 	else if (Result == NOD_ERR_UNKNOWN)
 	{
-		puts("Unknown file: size mismatch \nPress any key to exit... \n");
-		UTIL_WAIT_KEY;
+		puts("Unknown file: size mismatch\n");
+		UTIL_WAIT_KEY("Press any key to exit...");
 		fclose(ptrFile);
 		return;
 	}
@@ -108,16 +108,12 @@ int main(int argc, char * argv[])
 {
 	char cExtension[5];
 
-	printf("\nPS2 HL NOD tool v%s \n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2018, Alexey Leushin. All rights reserved.");
-		puts("How to use: \n1) Windows explorer - drag and drop *.nod file on nodtool.exe \n2) Command line\\Batch - nodtool [file_name] \n");
-		puts("\tCheck file: nodtool test [file_name] \n\n");
-		puts("For more info read ReadMe.txt \n");
-		puts("Press any key to exit ...");
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)
 	{

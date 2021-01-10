@@ -403,14 +403,12 @@ uint PSIProperSize(uint Size)	// Function returns closest proper dimension. PS2 
 
 int main(int argc, char * argv[])
 {
-	printf("PS2 HL Sprite Tool v%s\n", PROG_VERSION);
+	puts(PROG_TITLE);
 
 	if (argc == 1)
 	{
-		puts("\nDeveloped by Alexey Leusin. \nCopyright (c) 2017-2019, Alexey Leushin. All rights reserved.\n");
-		puts("How to use: \n1) Windows explorer - drag and drop sprite file on sprtool.exe \n2) Command line\\Batch - sprtool (noresize/lin) [file_name] \n\nFor more info read ReadMe.txt \n");
-		puts("Press any key to exit ...");
-		UTIL_WAIT_KEY;
+		puts(PROG_INFO);
+		UTIL_WAIT_KEY("Press any key to exit ...");
 	}
 	else if (argc == 2)
 	{
