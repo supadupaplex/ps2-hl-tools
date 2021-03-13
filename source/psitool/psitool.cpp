@@ -13,6 +13,7 @@
 bool ConvertPNGtoPSI(const char * FileName);
 bool ConvertPSItoPNG(const char * FileName);
 void PatchRGBAPalette(uchar * RGBAPalette, ulong RGBAPaletteSize, bool MulDiv);
+void WierdRGBAPalette(uchar * RGBAPalette, ulong RGBAPaletteSize, bool MulDiv);
 
 bool ConvertPNGtoPSI(const char * FileName)
 {
@@ -300,6 +301,21 @@ void PatchRGBAPalette(uchar * RGBAPalette, ulong RGBAPaletteSize, bool MulDiv)		
 	}
 }
 
+// Palette fix for alphafont.psf
+void WierdRGBAPalette(uchar * RGBAPalette, ulong RGBAPaletteSize, bool MulDiv)
+{
+	uint PaletteElementSize = 4;
+
+	puts("Fixing palette for alphafont.psf...");
+	for (ulong i = 0; i < RGBAPaletteSize; i++)
+	{
+		if ((i + 1) % PaletteElementSize == 0)
+			continue;	// Skip alpha
+
+		RGBAPalette[i] = 0x80;
+	}
+}
+
 bool ConvertPSFtoPNG(const char * FileName)
 {
 	FILE *ptrInputF;						// Input font
@@ -426,6 +442,8 @@ bool ConvertPNGtoPSF(const char * FileName)
 	// Prepare palette
 	PNGPalette = PNGReadPalette(&ptrInputPNG);
 	PatchRGBAPalette(PNGPalette->Data, PNGPalette->DataSize, false);
+	if (strstr(FileName, "alphafont"))
+		WierdRGBAPalette(PNGPalette->Data, PNGPalette->DataSize, false);
 
 	// Prepare bitmap
 	BytesPerPixel = 1;

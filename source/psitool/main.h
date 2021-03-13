@@ -17,7 +17,7 @@
 #include <ctype.h>		// tolower()
 
 ////////// Definitions //////////
-#define PROG_TITLE "\nPS2 HL image tool v1.2\n\n"
+#define PROG_TITLE "\nPS2 HL image tool v1.21\n\n"
 #define PROG_INFO "\
 Developed by supadupaplex, 2017-2021\n\
 License: BSD-3-Clause (check out license.txt)\n\
