@@ -26,6 +26,10 @@ LD=g++
 CFLAGS=-c -Wall -m32 -O2 -I$(COMDIR)
 LDFLAGS=-m32 $(LIBS)
 
+# bake GCC libs into Windows binary to be able to run it without installing GCC
+ifeq ($(OS),Windows_NT)
+LDFLAGS:=$(LDFLAGS) -static-libgcc -static-libstdc++
+endif
 
 $(COMOBJ)/%.o $(OBJDIR)/%.o: %.cpp
 	$(CC) $(CFLAGS) $< -o $@
