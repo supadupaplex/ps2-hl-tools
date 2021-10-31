@@ -78,10 +78,12 @@ void ConvertSPZToSPR(const char * cFile, bool Resize, bool Linear)
 		Textures[i].Initialize();
 		Textures[i].UpdateFromFile(&ptrSPZ, BitmapOffset, BitmapSize, PaletteOffset, PaletteSize, SPZFrameHeaders[i].Name, SPZFrameHeaders[i].Width, SPZFrameHeaders[i].Height);
 
+		// Convert palette (brfore Linear resize)
+		Textures[i].PaletteReformat(SPZ_PALETTE_ELEMENT_SIZE);
+
 		// Resize frame to it's original size (if specified)
 		if (Resize == true)
 		{
-			Textures[i].PaletteReformat(SPZ_PALETTE_ELEMENT_SIZE);	// Linear resize requires proper palette
 			if (Linear)
 				Textures[i].LinearResize(SPZFrameHeaders[i].UpWidth, SPZFrameHeaders[i].UpHeight);
 			else
@@ -153,7 +155,6 @@ void ConvertSPZToSPR(const char * cFile, bool Resize, bool Linear)
 	for (int i = 0; i < SPZHeader.FrameCount; i++)
 	{
 		Textures[i].PaletteRemoveAlpha();
-		//Textures[i].PaletteReformat(SPR_PALETTE_ELEMENT_SIZE);	// Moved this line as it should be before the linear resize
 		Textures[i].PaletteMulDiv(true);
 		if (SPRFormat == SPR_INDEXALPHA)
 			Textures[i].PalettePatchIAColors(SPR_PALETTE_ELEMENT_SIZE, true);
@@ -318,7 +319,6 @@ void ConvertSPRToSPZ(const char * cFile, bool Linear)
 		Textures[i].PaletteAddSPZAlpha(SPZFormat);
 		if (SPZFormat == SPZ_INDEXALPHA)
 			Textures[i].PalettePatchIAColors(SPZ_PALETTE_ELEMENT_SIZE, false);
-		Textures[i].PaletteReformat(SPZ_PALETTE_ELEMENT_SIZE);
 	}
 
 	// Write header
@@ -356,6 +356,9 @@ void ConvertSPRToSPZ(const char * cFile, bool Linear)
 			Textures[i].LinearResize(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
 		else
 			Textures[i].NearestResize(PSIProperSize(OriginalWidth), PSIProperSize(OriginalHeight));
+
+		// Convert palette (after linear resize)
+		Textures[i].PaletteReformat(SPZ_PALETTE_ELEMENT_SIZE);
 
 		// Write header
 		SPZFrameHeader.Update(Textures[i].Name, Textures[i].Width, Textures[i].Height);
