@@ -241,6 +241,146 @@ void GenerateFolders(char * cPath)
 	}
 }
 
+//// Basic ZIP lookup functionality ////
+
+#define ZIP_SIGN_LOCAL		0x04034B50 // LE PK\0x03\0x04
+#define ZIP_SIGN_CENTRAL	0x02014B50 // LE PK\0x01\0x02
+#define ZIP_SIGN_FOOTER		0x06054B50 // LE PK\0x05\0x06
+
+#pragma pack(1)
+typedef struct
+{
+	unsigned int sign;
+	short ver;
+	short flag;
+	short compr_type;
+	short last_time;
+	short last_date;
+	unsigned int crc32;
+	int compr_sz;
+	int decompr_sz;
+	short name_sz;
+	short extra_sz;
+	// name, extra
+} zip_local;
+
+#pragma pack(1)
+typedef struct
+{
+	unsigned int sign;
+	short ver;
+	short ver_min;
+	short flag;
+	short compr_type;
+	short last_time;
+	short last_date;
+	unsigned int crc32;
+	int compr_sz;
+	int decompr_sz;
+	short name_sz;
+	short extra_sz;
+	short comment_sz;
+	short disk_start;
+	short attr_int;
+	int attr_ext;
+	int loc_offset;
+	// name, extra, comment
+} zip_central;
+
+#pragma pack(1)
+typedef struct
+{
+	unsigned int sign;
+	short disk_cur;
+	short disk_central;
+	short disk_records;
+	short num_records;
+	int central_sz;
+	int central_offset;
+	short comment_sz;
+	// comment
+} zip_footer;
+
+bool ZipLookupFile(char *zip, char *file, int *offset, int *csz, int *dsz, ztype *type)
+{
+	FILE *pf;
+	int fsz;
+	bool found;
+	int rec, fpos;
+	char buf[PATH_LEN];
+
+	zip_local zloc;
+	zip_central zcent;
+	zip_footer zfoot;
+
+	SafeFileOpen(&pf, zip, "rb");
+	fsz = FileSize(&pf);
+
+	// Lookup footer and check //
+	FileReadBlock(&pf, &zfoot, fsz - sizeof(zfoot), sizeof(zfoot));
+	if (zfoot.sign != ZIP_SIGN_FOOTER ||
+		zfoot.disk_records != zfoot.num_records)
+		goto err;
+
+	// Lookup central dir entry //
+	fpos = zfoot.central_offset;
+	found = false;
+	for (rec = 0; rec < zfoot.num_records; rec++) {
+		// Check next central header
+		FileReadBlock(&pf, &zcent, fpos, sizeof(zcent));
+
+		// Check signature
+		if (zcent.sign != ZIP_SIGN_CENTRAL)
+			goto err;
+
+		// Check name
+		fpos += sizeof(zcent);
+		FileReadBlock(&pf, buf, fpos, zcent.name_sz);
+		if (!strncmp(file, buf, zcent.name_sz))
+		{
+			found = true;
+			break;
+		}
+
+		fpos += zcent.name_sz + zcent.extra_sz + zcent.comment_sz;
+	}
+
+	if (!found)
+		goto err;
+
+	// Lookup local dir entry //
+	fpos = zcent.loc_offset;
+	FileReadBlock(&pf, &zloc, fpos, sizeof(zloc));
+
+	// Check signature
+	if (zloc.sign != ZIP_SIGN_LOCAL)
+		goto err;
+
+	// Check name
+	fpos += sizeof(zloc);
+	FileReadBlock(&pf, buf, fpos, zloc.name_sz);
+	if (strncmp(file, buf, zcent.name_sz))
+		goto err;
+
+	// Found the match, prepare the data to return
+	*offset = fpos + zloc.name_sz + zloc.extra_sz;
+	*csz = zloc.compr_sz;
+	*dsz = zloc.decompr_sz;
+	switch (zloc.compr_type)
+	{
+		case 0x00: *type = ZIP_NONE;    break;
+		case 0x08: *type = ZIP_DEFLATE; break;
+		default:   *type = ZIP_BAD;     break;
+	};
+
+	fclose(pf);
+	return true;
+
+err:
+	fclose(pf);
+	printf("Can't find %s in %s\n", file, zip);
+	return false;
+}
 
 //// PLATFORM-DEPENDENT CODE BELOW ////
 

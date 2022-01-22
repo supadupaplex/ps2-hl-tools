@@ -24,7 +24,8 @@ all: epctool \
 	phdtool \
 	psitool \
 	sprtool \
-	txttool
+	txttool \
+	rfstool
 
 clean: epctool-clean \
 	mdltool-clean \
@@ -34,7 +35,8 @@ clean: epctool-clean \
 	phdtool-clean \
 	psitool-clean \
 	sprtool-clean \
-	txttool-clean
+	txttool-clean \
+	rfstool-clean
 
 chzip:
 	echo "> Checking 7z location ..." && which 7z

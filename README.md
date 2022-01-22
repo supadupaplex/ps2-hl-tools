@@ -13,6 +13,7 @@ List of tools:
 7) **mustool**: .vag music and unplayable .wav files
 8) **nodtool**: .nod AI node graph files
 9) **epctool**: .epc model precache lists
+10) **rfstool**: it can extract *.hl1 files from PCSX2 save states for DICTS.PAK
 
 You can also find here documentation about some PS2 HL file formats.
 

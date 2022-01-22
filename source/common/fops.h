@@ -40,4 +40,16 @@ void DirIterInit(const char * Dir); // Init/reset dir iterator
 void DirIterClose(); // Deinit dir iterator
 const char * DirIterGet(); // Dir iterator, returns NULL on end
 
+// Basic ZIP lookup functionality
+typedef enum
+{
+	ZIP_NONE,
+	ZIP_DEFLATE,
+	ZIP_BAD,
+} ztype;
+// args:
+// * in: (zip) zip name, (file) packed file name
+// * out: offset, (csz) compressed size, (dsz) decompessed size, type
+bool ZipLookupFile(char *zip, char *file, int *offset, int *csz, int *dsz, ztype *type);
+
 #endif
